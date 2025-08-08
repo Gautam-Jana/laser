@@ -1,0 +1,459 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  SdfBox, SdfButton, SdfCard, SdfCheckbox, SdfFocusPane, SdfLink, 
+  SdfPagination, SdfSelectSimple, SdfTab, SdfTabGroup, SfcShellAppBar 
+} from '@waypoint/react-components';
+
+interface Report {
+  id: string;
+  companyCode: string;
+  reportName: string;
+  reportId: string;
+  batchNumber: string;
+  reportType: string;
+  eligibilityDate: string;
+  hold: boolean;
+  toDelete: boolean;
+}
+
+interface FormData {
+  region: string;
+  companyCode: string;
+}
+
+const LaserStorageFacility: React.FC = () => {
+  // State management
+  const [activeTab, setActiveTab] = useState<'criteria' | 'reports' | 'audit'>('reports');
+  const [isFilterPaneOpen, setIsFilterPaneOpen] = useState(false);
+  const [formData, setFormData] = useState<FormData>({
+    region: '',
+    companyCode: '',
+  });
+  const [reports, setReports] = useState<Report[]>([]);
+  const [selectedReports, setSelectedReports] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(25);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Refs
+  const focusPaneRef = useRef<any>(null);
+  
+  // Region options
+  const regionOptions = [
+    { label: 'North America', value: 'na' },
+    { label: 'Europe', value: 'eu' },
+    { label: 'Asia Pacific', value: 'ap' },
+  ];
+  
+  // Company options
+  const companyOptions = [
+    { label: 'Company A', value: 'compA' },
+    { label: 'Company B', value: 'compB' },
+    { label: 'Company C', value: 'compC' },
+  ];
+  
+  // Initialize component
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        setIsLoading(true);
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        // Mock data based on your screenshot
+        const mockReports: Report[] = [
+          {
+            id: '1',
+            companyCode: 'AA1',
+            reportName: 'PAYROLL SCHED',
+            reportId: 'AA12025',
+            batchNumber: '0000',
+            reportType: 'Deferred',
+            eligibilityDate: '07/10/2025 01:10:07',
+            hold: false,
+            toDelete: false
+          },
+          {
+            id: '2',
+            companyCode: 'B09',
+            reportName: '$WRAP PWRLTRNS',
+            reportId: '2822373',
+            batchNumber: '2373',
+            reportType: 'Wrap',
+            eligibilityDate: '07/17/2025 05:04:26',
+            hold: false,
+            toDelete: false
+          },
+          {
+            id: '3',
+            companyCode: 'B09',
+            reportName: '$WRAP PWRLTRNS',
+            reportId: '2922388',
+            batchNumber: '2388',
+            reportType: 'Wrap',
+            eligibilityDate: '07/21/2025 03:11:33',
+            hold: false,
+            toDelete: false
+          },
+          {
+            id: '4',
+            companyCode: 'B09',
+            reportName: 'ECOR NOTE',
+            reportId: '2922388',
+            batchNumber: '2388',
+            reportType: 'Wrap',
+            eligibilityDate: '07/21/2025 03:11:33',
+            hold: false,
+            toDelete: false
+          },
+          {
+            id: '5',
+            companyCode: 'B09',
+            reportName: 'REV. AMC',
+            reportId: '2922388',
+            batchNumber: '2388',
+            reportType: 'Wrap',
+            eligibilityDate: '07/21/2025 03:11:33',
+            hold: false,
+            toDelete: false
+          },
+          {
+            id: '6',
+            companyCode: 'B09',
+            reportName: 'REV. PAY SUM',
+            reportId: '2822373',
+            batchNumber: '2388',
+            reportType: 'Wrap',
+            eligibilityDate: '07/17/2025 05:04:24',
+            hold: false,
+            toDelete: false
+          },
+          {
+            id: '7',
+            companyCode: 'B09',
+            reportName: 'REV. REGISTER',
+            reportId: '2822373',
+            batchNumber: '2373',
+            reportType: 'Wrap',
+            eligibilityDate: '07/17/2025 05:04:24',
+            hold: false,
+            toDelete: false
+          }
+        ];
+        
+        setReports(mockReports);
+        setError(null);
+      } catch (err) {
+        setError('Failed to load reports. Please try again.');
+        console.error('Report loading error:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchReports();
+    
+    // Initialize components
+    if (focusPaneRef.current) {
+      focusPaneRef.current.addEventListener('sdfDismiss', () => setIsFilterPaneOpen(false));
+    }
+    
+    // Cleanup
+    return () => {
+      if (focusPaneRef.current) {
+        focusPaneRef.current.removeEventListener('sdfDismiss', () => setIsFilterPaneOpen(false));
+      }
+    };
+  }, []);
+  
+  // Handle input changes
+  const handleInputChange = (name: keyof FormData, value: string) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+  
+  // Handle report selection
+  const handleReportSelect = (id: string) => {
+    setSelectedReports(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+  
+  // Handle hold checkbox change
+  const handleHoldChange = (id: string) => {
+    setReports(prev => prev.map(report => 
+      report.id === id ? { ...report, hold: !report.hold } : report
+    ));
+  };
+  
+  // Handle delete checkbox change
+  const handleDeleteChange = (id: string) => {
+    setReports(prev => prev.map(report => 
+      report.id === id ? { ...report, toDelete: !report.toDelete } : report
+    ));
+  };
+  
+  // Submit reports
+  const handleSubmit = () => {
+    console.log('Submitting reports:', reports.filter(r => selectedReports.has(r.id)));
+    alert('Reports submitted successfully!');
+  };
+  
+  // Clear selections
+  const handleClear = () => {
+    setSelectedReports(new Set());
+    setReports(prev => prev.map(r => ({ ...r, hold: false, toDelete: false })));
+  };
+  
+  // Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = reports.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(reports.length / itemsPerPage);
+  
+  // Handle pagination
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  return (
+    <div>
+      <SfcShellAppBar size="small" slot="app-bar">Laser Storage Facility</SfcShellAppBar>
+      
+      {/* Region and Company Selection */}
+      <div className="selection-section">
+        <SdfSelectSimple
+          className="selection-input"
+          label="Region"
+          filterable
+          items={regionOptions}
+          value={formData.region}
+          onSdfChange={(e) => handleInputChange('region', e.detail.value)}
+        />
+        
+        <SdfSelectSimple
+          className="selection-input"
+          label="Company Code"
+          filterable
+          items={companyOptions}
+          value={formData.companyCode}
+          onSdfChange={(e) => handleInputChange('companyCode', e.detail.value)}
+        />
+      </div>
+      
+      {/* Tab Group */}
+      <SdfTabGroup>
+        <SdfTab 
+          active={activeTab === 'criteria'} 
+          icon="ext-mdi-event-available"
+          onClick={() => setActiveTab('criteria')}
+        >
+          Selection Criteria
+        </SdfTab>
+        <SdfTab 
+          active={activeTab === 'reports'} 
+          icon="ext-mdi-inventory"
+          onClick={() => setActiveTab('reports')}
+        >
+          View Reports
+        </SdfTab>
+        <SdfTab 
+          icon="base-gift"
+          onClick={() => setActiveTab('audit')}
+        >
+          Audit Trail
+        </SdfTab>
+      </SdfTabGroup>
+      
+      {/* Main Card */}
+      <SdfCard
+        className="main-card"
+      >
+        {/* Filter Section */}
+        <section className="filter-section">
+          <SdfButton 
+            id="open-button"
+            onClick={() => setIsFilterPaneOpen(true)}
+            className="filter-button"
+          >
+            Filter
+          </SdfButton>
+          
+          <SdfFocusPane
+            ref={focusPaneRef}
+            closeable
+            spacing="loose"
+            heading="Selection Criteria"
+            pane-type="anchored"
+            visible={isFilterPaneOpen}
+          >
+            <SdfBox variant="clear" spacing="none" className="filter-box">
+              <div className="filter-grid">
+                <SdfLink>
+                  <div className="filter-item">
+                    <label>* Company: {formData.companyCode || 'ALL'}</label>
+                  </div>
+                </SdfLink>
+                
+                <SdfLink>
+                  <div className="filter-item">
+                    <label>* Batch: ALL</label>
+                  </div>
+                </SdfLink>
+                
+                <SdfLink>
+                  <div className="filter-item">
+                    <label>* Rpt Name: ALL</label>
+                  </div>
+                </SdfLink>
+                
+                <SdfLink>
+                  <div className="filter-item">
+                    <label>* Rpt ID: ALL</label>
+                  </div>
+                </SdfLink>
+                
+                <SdfLink>
+                  <div className="filter-item">
+                    <label>* Rpt Type: ALL</label>
+                  </div>
+                </SdfLink>
+                
+                <SdfLink>
+                  <div className="filter-item">
+                    <label>* Rpt Hold: ALL</label>
+                  </div>
+                </SdfLink>
+                
+                <SdfLink>
+                  <div className="filter-item">
+                    <label>* Rpt Age</label>
+                  </div>
+                </SdfLink>
+                
+                <SdfLink>
+                  <div className="filter-item">
+                    <label>* Rpt From Date</label>
+                  </div>
+                </SdfLink>
+                
+                <SdfLink>
+                  <div className="filter-item">
+                    <label>* Rpt To Date</label>
+                  </div>
+                </SdfLink>
+              </div>
+            </SdfBox>
+          </SdfFocusPane>
+        </section>
+        
+        {/* Reports Table */}
+        <div className="reports-table">
+          {isLoading ? (
+            <div className="loading-indicator">Loading reports...</div>
+          ) : error ? (
+            <div className="error-message">{error}</div>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Company Code</th>
+                  <th>Report Name</th>
+                  <th>Report ID</th>
+                  <th>Batch Number</th>
+                  <th>Report Type</th>
+                  <th>Location</th>
+                  <th>Eligibility date</th>
+                  <th>Hold</th>
+                  <th>Delete</th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentItems.map((report) => (
+                  <tr 
+                    key={report.id}
+                    className={selectedReports.has(report.id) ? 'selected' : ''}
+                    onClick={() => handleReportSelect(report.id)}
+                  >
+                    <td>{report.companyCode}</td>
+                    <td>{report.reportName}</td>
+                    <td>{report.reportId}</td>
+                    <td>{report.batchNumber}</td>
+                    <td>{report.reportType}</td>
+                    <td></td> {/* Empty for location */}
+                    <td>{report.eligibilityDate}</td>
+                    <td>
+                      <SdfCheckbox 
+                        checked={report.hold}
+                        onChange={() => handleHoldChange(report.id)}
+                      />
+                    </td>
+                    <td>
+                      <SdfCheckbox 
+                        checked={report.toDelete}
+                        onChange={() => handleDeleteChange(report.id)}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+        
+        {/* Pagination */}
+        <section className="pagination-section">
+          <div className="sr-only" id="announcement" aria-live="polite"></div>
+          <SdfPagination 
+            total-pages={totalPages.toString()}
+            current-page={currentPage.toString()}
+            onSdfPageChange={(e) => handlePageChange(parseInt(e.detail))}
+          />
+        </section>
+        
+        {/* Action Buttons */}
+        <div className="action-buttons">
+          <SdfButton 
+            emphasis="primary" 
+            className="submit-button"
+            onClick={handleSubmit}
+            icon="action-upload"
+          >
+            Submit
+          </SdfButton>
+          
+          <SdfButton 
+            emphasis="primary" 
+            className="clear-button"
+            onClick={handleClear}
+            icon="action-close"
+          >
+            Clear
+          </SdfButton>
+          
+          <SdfButton 
+            emphasis="primary" 
+            className="help-button"
+            icon="action-help"
+          >
+            Help
+          </SdfButton>
+        </div>
+        
+        {/* Footer Links */}
+        <div className="footer-links">
+          <SdfLink className="privacy-link">PRIVACY</SdfLink>
+          <SdfLink className="legal-link">LEGAL</SdfLink>
+        </div>
+      </SdfCard>
+    </div>
+  );
+};
+
+export default LaserStorageFacility;
