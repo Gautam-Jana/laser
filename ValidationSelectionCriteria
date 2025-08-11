@@ -1,0 +1,662 @@
+import React, { useState } from 'react';
+import { 
+  SdfBox, SdfBoxStack, SdfButton, SdfCard, SdfFocusPane, 
+  SdfInput, SdfLink, SdfSelectSimple, SdfTab, SdfTabGroup, SfcShellAppBar 
+} from '@waypoint/react-components';
+
+interface SelectOption {
+  label: string;
+  value: string;
+}
+
+interface FormData {
+  region: SelectOption | null;
+  companyCode: string;
+  batchNumber: string;
+  reportType: SelectOption | null;
+  reportName: string;
+  reportHold: SelectOption | null;
+  reportId: string;
+  reportAge: string;
+  reportFromDate: string;
+  reportToDate: string;
+  reportPerPage: string;
+}
+
+interface FormErrors {
+  companyCode?: string;
+  batchNumber?: string;
+  reportName?: string;
+  reportType?: string;
+  reportId?: string;
+  reportHold?: string;
+  reportAge?: string;
+  reportFromDate?: string;
+  reportToDate?: string;
+  reportPerPage?: string;
+}
+
+const LaserStorageFacility: React.FC = () => {
+  // State management
+  const [activeTab, setActiveTab] = useState<'criteria' | 'reports' | 'audit'>('criteria');
+  const [isFilterPaneOpen, setIsFilterPaneOpen] = useState(false);
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+  const [formData, setFormData] = useState<FormData>({
+    region: null,
+    companyCode: '',
+    batchNumber: '',
+    reportType: null,
+    reportName: '',
+    reportHold: null,
+    reportId: '',
+    reportAge: '',
+    reportFromDate: '',
+    reportToDate: '',
+    reportPerPage: '25',
+  });
+  
+  const [errors, setErrors] = useState<FormErrors>({});
+
+  // Dropdown options
+  const regionOptions: SelectOption[] = [
+    { label: 'North America', value: 'na' },
+    { label: 'Europe', value: 'eu' },
+    { label: 'Asia Pacific', value: 'ap' },
+  ];
+
+  const companyOptions: SelectOption[] = [
+    { label: 'Company A', value: 'compA' },
+    { label: 'Company B', value: 'compB' },
+    { label: 'Company C', value: 'compC' },
+  ];
+
+  const reportTypeOptions: SelectOption[] = [
+    { label: 'Deferred', value: '1' },
+    { label: 'Generic Letter', value: '2' },
+    { label: 'Quarter', value: '3' },
+    { label: 'Quarter w/PR', value: '4' },
+    { label: 'Wrap', value: '5' },
+  ];
+
+  const reportHoldOptions: SelectOption[] = [
+    { label: 'All - Show all reports', value: '0' },
+    { label: 'Yes - Only show held reports', value: '1' },
+    { label: 'No - Only show non-held reports', value: '2' },
+  ];
+
+  // Validation functions
+  const validateWildcards = (value: string): boolean => {
+    if (value.includes('""')) {
+      return false; // Consecutive " not allowed
+    }
+    return true;
+  };
+
+  const validateCompanyCode = (code: string): boolean => {
+    if (!code) return true;
+    if (!validateWildcards(code)) return false;
+    return /^[a-zA-Z0-9?"]+$/.test(code);
+  };
+
+  const validateReportName = (name: string): boolean => {
+    if (!name) return true;
+    return /^[a-zA-Z0-9?$" ]+$/.test(name);
+  };
+
+  const validateReportId = (id: string, reportType: string | null): boolean => {
+    if (!id) return true;
+    if (!validateWildcards(id)) return false;
+    
+    if (!reportType) return true;
+    
+    switch(reportType) {
+      case '5': // Wrap
+        return /^[A-Z0-9]{1,3}#?$/.test(id) || 
+               /^P\/R\d+$/.test(id) || 
+               /^NetBatch\d+$/.test(id);
+      
+      case '3': // Quarter
+      case '4': // Quarter w/PR
+        return /^QBU\d+$/.test(id);
+      
+      case '1': // Employee Earnings (Deferred)
+        return /^\d{4}Q\d{5}$/.test(id);
+      
+      case '2': // Municipal Tax (Generic Letter)
+        return /^\d{4}QM\d{4}$/.test(id);
+      
+      default:
+        return /^\d{2}\/\d{2}\/\d{2}$/.test(id);
+    }
+  };
+
+  const validateBatchNumber = (batch: string, reportType: string | null): boolean => {
+    if (!batch) return true;
+    
+    // For Deferred or Generic Letter, batch must be 0000
+    if (reportType === '1' || reportType === '2') {
+      return batch === '0000';
+    }
+    
+    // Validate wildcards
+    if (!validateWildcards(batch)) return false;
+    
+    // Remove wildcards for length check
+    const cleanBatch = batch.replace(/\?/g, 'X').replace(/"/g, '');
+    return cleanBatch.length >= 4 && cleanBatch.length <= 10;
+  };
+
+  const validateDate = (date: string): boolean => {
+    if (!date) return true;
+    const dateObj = new Date(date);
+    return dateObj >= new Date('2001-01-01');
+  };
+
+  const validateReportAge = (age: string): boolean => {
+    if (!age) return true;
+    const ageNum = parseInt(age, 10);
+    return !isNaN(ageNum) && ageNum >= 0 && Number.isInteger(ageNum);
+  };
+
+  const validatePerPage = (value: string): boolean => {
+    const num = parseInt(value, 10);
+    return !isNaN(num) && num > 0 && num <= 100;
+  };
+
+  const validateReportHold = (holdValue: SelectOption | null): boolean => {
+    return holdValue !== null && ['0', '1', '2'].includes(holdValue.value);
+  };
+
+  // Handlers
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Clear error when user types
+    if (errors[name as keyof FormErrors]) {
+      setErrors(prev => ({ ...prev, [name]: undefined }));
+    }
+  };
+
+  const handleSelectChange = (field: keyof FormData) => (option: SelectOption | null) => {
+    setFormData(prev => ({ ...prev, [field]: option }));
+    
+    // Clear error when user selects
+    if (errors[field as keyof FormErrors]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+    
+    // Special handling for report type change
+    if (field === 'reportType') {
+      // Reset batch number for Deferred/Generic Letter
+      if (option?.value === '1' || option?.value === '2') {
+        setFormData(prev => ({ ...prev, batchNumber: '0000' }));
+      }
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newErrors: FormErrors = {};
+
+    // Validate all fields
+    if (!validateCompanyCode(formData.companyCode)) {
+      newErrors.companyCode = 'Cannot use consecutive "" wildcards or invalid characters';
+    }
+    
+    if (!validateBatchNumber(formData.batchNumber, formData.reportType?.value || null)) {
+      if (formData.reportType?.value === '1' || formData.reportType?.value === '2') {
+        newErrors.batchNumber = 'Must be 0000 for Deferred/Generic Letter reports';
+      } else {
+        newErrors.batchNumber = 'Invalid batch number (4-10 digits with wildcards)';
+      }
+    }
+    
+    if (!validateReportName(formData.reportName)) {
+      newErrors.reportName = 'Invalid characters in report name';
+    }
+    
+    if (!validateReportId(formData.reportId, formData.reportType?.value || null)) {
+      newErrors.reportId = 'Invalid format for selected report type';
+    }
+    
+    if (!validateReportHold(formData.reportHold)) {
+      newErrors.reportHold = 'Please select a valid report hold option';
+    }
+    
+    if (formData.reportAge && !validateReportAge(formData.reportAge)) {
+      newErrors.reportAge = 'Must be a non-negative integer';
+    }
+    
+    // Mutual exclusion validation
+    const hasDateRange = formData.reportFromDate || formData.reportToDate;
+    if (formData.reportAge && hasDateRange) {
+      newErrors.reportAge = 'Cannot use both Report Age and Date Range';
+      newErrors.reportFromDate = 'Cannot use both Report Age and Date Range';
+      newErrors.reportToDate = 'Cannot use both Report Age and Date Range';
+    }
+    
+    if (formData.reportFromDate && !validateDate(formData.reportFromDate)) {
+      newErrors.reportFromDate = 'Date must be after 2001-01-01';
+    }
+    
+    if (formData.reportToDate && !validateDate(formData.reportToDate)) {
+      newErrors.reportToDate = 'Date must be after 2001-01-01';
+    }
+    
+    if (formData.reportToDate && formData.reportFromDate) {
+      const fromDate = new Date(formData.reportFromDate);
+      const toDate = new Date(formData.reportToDate);
+      
+      if (fromDate > toDate) {
+        newErrors.reportFromDate = 'From date cannot be after To date';
+        newErrors.reportToDate = 'To date cannot be before From date';
+      }
+    }
+    
+    if (!validatePerPage(formData.reportPerPage)) {
+      newErrors.reportPerPage = 'Must be between 1 and 100';
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    
+    // Clear errors and submit
+    setErrors({});
+    console.log('Form submitted:', formData);
+    alert('Report criteria submitted successfully!');
+  };
+
+  const handleClear = () => {
+    setFormData({
+      region: null,
+      companyCode: '',
+      batchNumber: '',
+      reportType: null,
+      reportName: '',
+      reportHold: { label: 'All - Show all reports', value: '0' },
+      reportId: '',
+      reportAge: '',
+      reportFromDate: '',
+      reportToDate: '',
+      reportPerPage: '25',
+    });
+    setErrors({});
+  };
+
+  const handleTabChange = (tab: 'criteria' | 'reports' | 'audit') => {
+    setActiveTab(tab);
+  };
+
+  // Format current date for display
+  const currentDate = new Date();
+  const formattedDate = currentDate.toLocaleDateString('en-US', {
+    month: '2-digit',
+    day: '2-digit',
+    year: 'numeric'
+  });
+  const formattedTime = currentDate.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white p-4">
+      <SfcShellAppBar size="small" className="bg-gray-800">
+        Laser Storage Facility
+      </SfcShellAppBar>
+
+      {/* Help Modal */}
+      {isHelpModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-xl p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Selection Criteria Help</h2>
+              <button 
+                onClick={() => setIsHelpModalOpen(false)}
+                className="text-gray-400 hover:text-white text-2xl"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold mb-2">Wild Card Characters</h3>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Use <span className="font-mono">?</span> to represent any single character</li>
+                  <li>Use <span className="font-mono">"</span> to represent any number of successive characters</li>
+                  <li className="text-red-400">Do not use consecutive <span className="font-mono">""</span> characters</li>
+                  <li>Example: <span className="font-mono">12"</span> or <span className="font-mono">12"4</span> are valid, but <span className="font-mono">12""</span> is invalid</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold mb-2">Company Code</h3>
+                <p>Enter a full Company code or use wildcards. Must be alphanumeric.</p>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold mb-2">Batch Number</h3>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>For <span className="font-semibold">Deferred</span> or <span className="font-semibold">Generic Letter</span> reports, Batch Number must be <span className="font-mono">0000</span></li>
+                  <li>For other report types, use standard format with optional wildcards</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold mb-2">Report Name</h3>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Reports starting with <span className="font-mono">$</span> are non-Revised reports</li>
+                  <li>Region-specific reports are not included in the standard list</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold mb-2">Report ID Formats</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse border border-gray-600">
+                    <thead>
+                      <tr className="bg-gray-700">
+                        <th className="p-2 border border-gray-600 text-left">Report Type</th>
+                        <th className="p-2 border border-gray-600 text-left">Format</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="p-2 border border-gray-600">Wrap</td>
+                        <td className="p-2 border border-gray-600 font-mono">WR #, P/R #, Net Batch #</td>
+                      </tr>
+                      <tr className="bg-gray-750">
+                        <td className="p-2 border border-gray-600">Quarter</td>
+                        <td className="p-2 border border-gray-600 font-mono">QBU #</td>
+                      </tr>
+                      <tr>
+                        <td className="p-2 border border-gray-600">Employee Earnings</td>
+                        <td className="p-2 border border-gray-600 font-mono">YYYYQBBBBB</td>
+                      </tr>
+                      <tr className="bg-gray-750">
+                        <td className="p-2 border border-gray-600">Municipal Tax</td>
+                        <td className="p-2 border border-gray-600 font-mono">YYYYQMBBBB</td>
+                      </tr>
+                      <tr>
+                        <td className="p-2 border border-gray-600">Others</td>
+                        <td className="p-2 border border-gray-600 font-mono">MM/DD/YY</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold mb-2">Report Type</h3>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li><span className="font-semibold">Deferred</span>: Produced outside of the payroll</li>
+                  <li><span className="font-semibold">Generic Letter</span>: Written to LSF using PWRLSUTL</li>
+                  <li><span className="font-semibold">Quarter</span>: Produced outside of the payroll</li>
+                  <li><span className="font-semibold">Quarter w/PR</span>: Produced by Quarter, print with payroll</li>
+                  <li><span className="font-semibold">Wrap</span>: Produced inline with the payroll</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold mb-2">Date Range vs Report Age</h3>
+                <p className="text-red-400 font-semibold">WARNING: These fields are mutually exclusive</p>
+                <p>Use either Report Age or Date Range, not both.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="max-w-7xl mx-auto mt-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <SdfSelectSimple
+            className="w-full rounded-lg border border-gray-600 shadow-lg bg-gray-800 text-white"
+            label="Region"
+            filterable
+            items={regionOptions}
+            value={formData.region}
+            onSdfChange={(e) => handleSelectChange('region')(e.detail.item)}
+            error={errors.region}
+          />
+          
+          <SdfSelectSimple
+            className="w-full rounded-lg border border-gray-600 shadow-lg bg-gray-800 text-white"
+            label="Company Code"
+            filterable
+            items={companyOptions}
+            value={formData.region} // This should be companyCode but it's a select?
+            onSdfChange={(e) => handleSelectChange('region')(e.detail.item)} // This should be companyCode
+            error={errors.companyCode}
+            helpText="Use ? for single char, \" for multiple chars"
+          />
+        </div>
+
+        <SdfTabGroup className="mb-8">
+          <SdfTab 
+            active={activeTab === 'criteria'} 
+            icon="ext-mdi-event-available"
+            onClick={() => handleTabChange('criteria')}
+          >
+            Selection Criteria
+          </SdfTab>
+          <SdfTab 
+            active={activeTab === 'reports'} 
+            icon="ext-mdi-inventory"
+            onClick={() => handleTabChange('reports')}
+          >
+            View Reports
+          </SdfTab>
+          <SdfTab 
+            active={activeTab === 'audit'} 
+            icon="base-gift"
+            onClick={() => handleTabChange('audit')}
+          >
+            Audit Trail
+          </SdfTab>
+        </SdfTabGroup>
+
+        <SdfCard className="bg-gray-800/90 backdrop-blur-lg shadow-2xl rounded-xl p-6 border border-gray-700">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold">Report Criteria</h2>
+            <div className="text-sm text-gray-400">
+              {formattedTime} {formattedDate}
+            </div>
+          </div>
+
+          {activeTab === 'criteria' && (
+            <form onSubmit={handleSubmit}>
+              <div className="mb-6 flex justify-end">
+                <SdfButton 
+                  id="open-button"
+                  type="button"
+                  onClick={() => setIsFilterPaneOpen(true)}
+                  className="bg-blue-600 hover:bg-blue-700 transition-colors"
+                >
+                  Filter
+                </SdfButton>
+              </div>
+
+              <SdfFocusPane
+                closeable
+                spacing="loose"
+                heading="Selection Criteria"
+                pane-type="anchored"
+                id="demo-component"
+                visible={isFilterPaneOpen}
+                onSdfDismiss={() => setIsFilterPaneOpen(false)}
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 p-4">
+                  <div className="sdf-box">
+                    <label className="text-gray-300">* Company: {formData.companyCode || 'ALL'}</label>
+                  </div>
+                  <div className="sdf-box">
+                    <label className="text-gray-300">* Batch: {formData.batchNumber || 'ALL'}</label>
+                  </div>
+                  <div className="sdf-box">
+                    <label className="text-gray-300">Rpt Name: {formData.reportName || 'ALL'}</label>
+                  </div>
+                  <div className="sdf-box">
+                    <label className="text-gray-300">Rpt ID: {formData.reportId || 'ALL'}</label>
+                  </div>
+                  <div className="sdf-box">
+                    <label className="text-gray-300">Rpt Type: {formData.reportType?.label || 'ALL'}</label>
+                  </div>
+                  <div className="sdf-box">
+                    <label className="text-gray-300">Rpt Hold: {formData.reportHold?.label || 'ALL'}</label>
+                  </div>
+                  <div className="sdf-box">
+                    <label className="text-gray-300">Rpt Age: {formData.reportAge || 'N/A'}</label>
+                  </div>
+                  <div className="sdf-box">
+                    <label className="text-gray-300">Rpt Fro Data: {formData.reportFromDate || 'N/A'}</label>
+                  </div>
+                </div>
+              </SdfFocusPane>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <SdfInput
+                  label="Batch Number"
+                  name="batchNumber"
+                  value={formData.batchNumber}
+                  onChange={handleInputChange}
+                  className="w-full bg-gray-700 border-gray-600 text-white"
+                  error={errors.batchNumber}
+                  helpText={formData.reportType?.value === '1' || formData.reportType?.value === '2' 
+                    ? "Must be 0000 for Deferred/Generic Letter" 
+                    : "Use wildcards: ? or \""}
+                />
+                
+                <SdfInput
+                  label="Report Name"
+                  name="reportName"
+                  value={formData.reportName}
+                  onChange={handleInputChange}
+                  className="w-full bg-gray-700 border-gray-600 text-white"
+                  error={errors.reportName}
+                  helpText="Reports starting with $ are non-Revised"
+                />
+                
+                <SdfInput
+                  label="Report Id"
+                  name="reportId"
+                  value={formData.reportId}
+                  onChange={handleInputChange}
+                  className="w-full bg-gray-700 border-gray-600 text-white"
+                  error={errors.reportId}
+                  helpText="Format varies by report type"
+                />
+                
+                <SdfSelectSimple
+                  label="Report Type"
+                  items={reportTypeOptions}
+                  value={formData.reportType}
+                  onSdfChange={(e) => handleSelectChange('reportType')(e.detail.item)}
+                  className="w-full bg-gray-700 border-gray-600 text-white"
+                  error={errors.reportType}
+                />
+                
+                <SdfSelectSimple
+                  label="Report Hold"
+                  items={reportHoldOptions}
+                  value={formData.reportHold}
+                  onSdfChange={(e) => handleSelectChange('reportHold')(e.detail.item)}
+                  className="w-full bg-gray-700 border-gray-600 text-white"
+                  error={errors.reportHold}
+                  helpText="Filter by report hold status"
+                />
+                
+                <SdfInput
+                  label="Report Age (Days)"
+                  name="reportAge"
+                  type="number"
+                  value={formData.reportAge}
+                  onChange={handleInputChange}
+                  className="w-full bg-gray-700 border-gray-600 text-white"
+                  error={errors.reportAge}
+                  helpText="Mutually exclusive with date range"
+                />
+                
+                <SdfInput
+                  label="Report From Date"
+                  name="reportFromDate"
+                  type="date"
+                  value={formData.reportFromDate}
+                  onChange={handleInputChange}
+                  className="w-full bg-gray-700 border-gray-600 text-white"
+                  error={errors.reportFromDate}
+                  helpText="After 2001, mutually exclusive with age"
+                />
+                
+                <SdfInput
+                  label="Report To Date"
+                  name="reportToDate"
+                  type="date"
+                  value={formData.reportToDate}
+                  onChange={handleInputChange}
+                  className="w-full bg-gray-700 border-gray-600 text-white"
+                  error={errors.reportToDate}
+                  helpText="After 2001, mutually exclusive with age"
+                />
+                
+                <SdfInput
+                  label="Report Per Page"
+                  name="reportPerPage"
+                  type="number"
+                  value={formData.reportPerPage}
+                  onChange={handleInputChange}
+                  className="w-full bg-gray-700 border-gray-600 text-white"
+                  error={errors.reportPerPage}
+                  helpText="Between 1-100"
+                />
+              </div>
+
+              <div className="flex flex-wrap justify-start gap-4 pt-4 border-t border-gray-700">
+                <SdfButton 
+                  type="submit"
+                  emphasis="primary"
+                  className="bg-green-600 hover:bg-green-700 px-6 py-3 transition-colors"
+                  icon="action-upload"
+                >
+                  Submit
+                </SdfButton>
+                
+                <SdfButton 
+                  type="button"
+                  onClick={handleClear}
+                  emphasis="primary"
+                  className="bg-gray-600 hover:bg-gray-700 px-6 py-3 transition-colors"
+                  icon="action-close"
+                >
+                  Clear
+                </SdfButton>
+                
+                <SdfButton 
+                  type="button"
+                  onClick={() => setIsHelpModalOpen(true)}
+                  emphasis="primary"
+                  className="bg-blue-600 hover:bg-blue-700 px-6 py-3 transition-colors"
+                  icon="action-help"
+                >
+                  Help
+                </SdfButton>
+              </div>
+            </form>
+          )}
+
+        </SdfCard>
+
+        <div className="flex justify-center gap-8 mt-8 text-sm">
+          <SdfLink className="text-blue-400 hover:text-blue-300 transition-colors">PRIVACY</SdfLink>
+          <SdfLink className="text-blue-400 hover:text-blue-300 transition-colors">LEGAL</SdfLink>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SelectionCriteria;
