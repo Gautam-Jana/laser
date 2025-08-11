@@ -1,0 +1,234 @@
+// Update FormErrors interface to include reportHold
+interface FormErrors {
+  companyCode?: string;
+  batchNumber?: string;
+  reportName?: string;
+  reportType?: string;
+  reportId?: string;
+  reportHold?: string;
+  reportAge?: string;
+  reportFromDate?: string;
+  reportToDate?: string;
+  reportPerPage?: string;
+}
+
+const [errors, setErrors] = useState<FormErrors>({});
+
+// Enhanced validation functions including reportHold
+const validateWildcards = (value: string): boolean => {
+  if (value.includes('""')) {
+    return false; // Consecutive " not allowed
+  }
+  return true;
+};
+
+const validateCompanyCode = (code: string): boolean => {
+  if (!code) return true;
+  if (!validateWildcards(code)) return false;
+  return /^[a-zA-Z0-9?"]+$/.test(code);
+};
+
+const validateReportName = (name: string): boolean => {
+  if (!name) return true;
+  return /^[a-zA-Z0-9?$" ]+$/.test(name);
+};
+
+const validateReportId = (id: string, reportType: string): boolean => {
+  if (!id) return true;
+  
+  // First validate wildcards
+  if (!validateWildcards(id)) return false;
+  
+  // Then validate based on report type
+  switch(reportType) {
+    case '5': // Wrap
+      // WR #, P/R #, Net Batch #
+      return /^[A-Z0-9]{1,3}#?$/.test(id) || 
+             /^P\/R\d+$/.test(id) || 
+             /^NetBatch\d+$/.test(id);
+    
+    case '3': // Quarter
+    case '4': // Quarter w/PR
+      return /^QBU\d+$/.test(id);
+    
+    case '1': // Employee Earnings (Deferred)
+      return /^\d{4}Q\d{5}$/.test(id);
+    
+    case '2': // Municipal Tax (Generic Letter)
+      return /^\d{4}QM\d{4}$/.test(id);
+    
+    default:
+      // MMDD/YY format
+      return /^\d{2}\/\d{2}\/\d{2}$/.test(id);
+  }
+};
+
+const validateBatchNumber = (batch: string, reportType: string): boolean => {
+  if (!batch) return true;
+  
+  // For Deferred or Generic Letter, batch must be 0000
+  if (reportType === '1' || reportType === '2') {
+    return batch === '0000';
+  }
+  
+  // Validate wildcards
+  if (!validateWildcards(batch)) return false;
+  
+  // Remove wildcards for length check
+  const cleanBatch = batch.replace(/\?/g, 'X').replace(/"/g, '');
+  
+  // Batch numbers are typically 4-10 digits
+  return cleanBatch.length >= 4 && cleanBatch.length <= 10;
+};
+
+const validateReportHold = (holdValue: string): boolean => {
+  // Report Hold must be one of the valid options
+  return ['0', '1', '2'].includes(holdValue);
+};
+
+const validateDate = (date: string): boolean => {
+  if (!date) return true;
+  const dateObj = new Date(date);
+  return dateObj >= new Date('2001-01-01');
+};
+
+const validateReportAge = (age: string): boolean => {
+  if (!age) return true;
+  const ageNum = parseInt(age, 10);
+  return !isNaN(ageNum) && ageNum >= 0 && Number.isInteger(ageNum);
+};
+
+const validatePerPage = (value: string): boolean => {
+  const num = parseInt(value, 10);
+  return !isNaN(num) && num > 0 && num <= 100;
+};
+
+// Handle input changes
+const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const { name, value } = e.target;
+  setFormData(prev => ({ ...prev, [name]: value }));
+  
+  // Clear error when user types
+  if (errors[name as keyof FormErrors]) {
+    setErrors(prev => ({ ...prev, [name]: undefined }));
+  }
+};
+
+// Handle select changes
+const handleSelectChange = (name: keyof FormData) => (value: string) => {
+  setFormData(prev => ({ ...prev, [name]: value }));
+  
+  // Clear error when user selects
+  if (errors[name]) {
+    setErrors(prev => ({ ...prev, [name]: undefined }));
+  }
+  
+  // Special handling for report type change
+  if (name === 'reportType') {
+    // Reset batch number for Deferred/Generic Letter
+    if (value === '1' || value === '2') {
+      setFormData(prev => ({ ...prev, batchNumber: '0000' }));
+    }
+  }
+};
+
+// Submit handler
+const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
+  const newErrors: FormErrors = {};
+
+  // Validate all fields
+  if (!validateCompanyCode(formData.companyCode)) {
+    newErrors.companyCode = 'Cannot use consecutive "" wildcards or invalid characters';
+  }
+  
+  if (!validateBatchNumber(formData.batchNumber, formData.reportType)) {
+    if (formData.reportType === '1' || formData.reportType === '2') {
+      newErrors.batchNumber = 'Must be 0000 for Deferred/Generic Letter reports';
+    } else {
+      newErrors.batchNumber = 'Invalid batch number (4-10 digits with wildcards)';
+    }
+  }
+  
+  if (!validateReportName(formData.reportName)) {
+    newErrors.reportName = 'Invalid characters in report name';
+  }
+  
+  if (!validateReportId(formData.reportId, formData.reportType)) {
+    newErrors.reportId = 'Invalid format for selected report type';
+  }
+  
+  // Validate Report Hold
+  if (!validateReportHold(formData.reportHold)) {
+    newErrors.reportHold = 'Please select a valid report hold option';
+  }
+  
+  if (formData.reportAge && !validateReportAge(formData.reportAge)) {
+    newErrors.reportAge = 'Must be a non-negative integer';
+  }
+  
+  // Mutual exclusion validation
+  const hasDateRange = formData.reportFromDate || formData.reportToDate;
+  if (formData.reportAge && hasDateRange) {
+    newErrors.reportAge = 'Cannot use both Report Age and Date Range';
+    newErrors.reportFromDate = 'Cannot use both Report Age and Date Range';
+    newErrors.reportToDate = 'Cannot use both Report Age and Date Range';
+  }
+  
+  if (formData.reportFromDate && !validateDate(formData.reportFromDate)) {
+    newErrors.reportFromDate = 'Date must be after 2001-01-01';
+  }
+  
+  if (formData.reportToDate && !validateDate(formData.reportToDate)) {
+    newErrors.reportToDate = 'Date must be after 2001-01-01';
+  }
+  
+  if (formData.reportToDate && formData.reportFromDate) {
+    const fromDate = new Date(formData.reportFromDate);
+    const toDate = new Date(formData.reportToDate);
+    
+    if (fromDate > toDate) {
+      newErrors.reportFromDate = 'From date cannot be after To date';
+      newErrors.reportToDate = 'To date cannot be before From date';
+    }
+  }
+  
+  if (!validatePerPage(formData.reportPerPage)) {
+    newErrors.reportPerPage = 'Must be between 1 and 100';
+  }
+  
+  if (Object.keys(newErrors).length > 0) {
+    setErrors(newErrors);
+    return;
+  }
+  
+  // Clear errors and submit
+  setErrors({});
+  console.log('Form submitted:', formData);
+  alert('Report criteria submitted successfully!');
+};
+
+// Clear form handler
+const handleClear = () => {
+  setFormData({
+    region: '',
+    companyCode: '',
+    batchNumber: '',
+    reportType: '',
+    reportName: '',
+    reportHold: '0', // Default to "All"
+    reportId: '',
+    reportAge: '',
+    reportFromDate: '',
+    reportToDate: '',
+    reportPerPage: '25',
+  });
+  setErrors({});
+};
+
+// Report Hold options with descriptions
+const reportHoldOptions: ReportTypeOption[] = [
+  { label: 'All - Show all reports regardless of hold status', value: '0' },
+  { label: 'Yes - Only show reports marked as Hold', value: '1' },
+  { label: 'No - Only show reports not marked as Hold', value: '2' },
+];
