@@ -1,0 +1,242 @@
+// ... (previous imports and interfaces remain the same)
+
+const SelectionCriteria: React.FC = () => {
+  // ... (previous state and variables remain the same)
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white p-4">
+      {/* ... (previous JSX remains the same) */}
+
+      <div>
+        <div className="flex items-center gap-20 ml-6 mt-4 mb-2">
+          <div>
+            <SdfSelectSimple
+              className="w-48 rounded-lg border border-gray-600 shadow-lg bg-gray-800 text-white"
+              label="Region"
+              filterable
+              items={regionOptions}
+              value={formData.region}
+              onSdfChange={(e: {detail: {value: SelectOption; }; }) => handleSelectChange('region')(e.detail.value)}
+            />
+            {errors.region && (
+              <SdfAlert type="inline" status="error" className="mt-1">
+                {errors.region}
+              </SdfAlert>
+            )}
+          </div>
+          
+          <div>
+            <SdfSelectSimple
+              className="w-48 rounded-lg border border-gray-600 shadow-lg bg-gray-800 text-white"
+              label="Company Code"
+              filterable
+              items={companyOptions}
+              value={formData.companyCode}
+              onSdfChange={(e: {detail: {value: SelectOption; }; }) => handleSelectChange('companyCode')(e.detail.value)}
+            />
+            {errors.companyCode && (
+              <SdfAlert type="inline" status="error" className="mt-1">
+                {errors.companyCode}
+              </SdfAlert>
+            )}
+          </div>
+        </div>
+
+        {/* ... (tab group remains the same) */}
+
+        <SdfCard className="bg-gray-800/90 backdrop-blur-lg shadow-2xl rounded-xl p-6 border border-gray-700">
+          {/* ... (card header remains the same) */}
+
+          {activeTab === 'criteria' && (
+            <form onSubmit={handleSubmit}>
+              {/* ... (filter button remains the same) */}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {/* Batch Number */}
+                <div>
+                  <SdfInput
+                    label="Batch Number"
+                    name="batchNumber"
+                    value={formData.batchNumber}
+                    onChange={handleInputChange}
+                    className="w-full bg-gray-700 border-gray-600 text-white"
+                  />
+                  {errors.batchNumber && (
+                    <SdfAlert type="inline" status="error" className="mt-1">
+                      {errors.batchNumber}
+                    </SdfAlert>
+                  )}
+                  <div className="text-xs text-gray-400 mt-1">
+                    {formData.reportType?.value === '1' || formData.reportType?.value === '2' 
+                      ? "Must be 0000 for Deferred/Generic Letter" 
+                      : "Use wildcards: ? or \""}
+                  </div>
+                </div>
+                
+                {/* Report Name */}
+                <div>
+                  <SdfInput
+                    label="Report Name"
+                    name="reportName"
+                    value={formData.reportName}
+                    onChange={handleInputChange}
+                    className="w-full bg-gray-700 border-gray-600 text-white"
+                  />
+                  {errors.reportName && (
+                    <SdfAlert type="inline" status="error" className="mt-1">
+                      {errors.reportName}
+                    </SdfAlert>
+                  )}
+                  <div className="text-xs text-gray-400 mt-1">
+                    Reports starting with $ are non-Revised
+                  </div>
+                </div>
+                
+                {/* Report Id */}
+                <div>
+                  <SdfInput
+                    label="Report Id"
+                    name="reportId"
+                    value={formData.reportId}
+                    onChange={handleInputChange}
+                    className="w-full bg-gray-700 border-gray-600 text-white"
+                  />
+                  {errors.reportId && (
+                    <SdfAlert type="inline" status="error" className="mt-1">
+                      {errors.reportId}
+                    </SdfAlert>
+                  )}
+                  <div className="text-xs text-gray-400 mt-1">
+                    Format varies by report type
+                  </div>
+                </div>
+                
+                {/* Report Type */}
+                <div>
+                  <SdfSelectSimple
+                    label="Report Type"
+                    items={reportTypeOptions}
+                    value={formData.reportType}
+                    onSdfChange={(e) => handleSelectChange('reportType')(e.detail.item)}
+                    className="w-full bg-gray-700 border-gray-600 text-white"
+                  />
+                  {errors.reportType && (
+                    <SdfAlert type="inline" status="error" className="mt-1">
+                      {errors.reportType}
+                    </SdfAlert>
+                  )}
+                </div>
+                
+                {/* Report Hold */}
+                <div>
+                  <SdfSelectSimple
+                    label="Report Hold"
+                    items={reportHoldOptions}
+                    value={formData.reportHold}
+                    onSdfChange={(e) => handleSelectChange('reportHold')(e.detail.item)}
+                    className="w-full bg-gray-700 border-gray-600 text-white"
+                  />
+                  {errors.reportHold && (
+                    <SdfAlert type="inline" status="error" className="mt-1">
+                      {errors.reportHold}
+                    </SdfAlert>
+                  )}
+                  <div className="text-xs text-gray-400 mt-1">
+                    Filter by report hold status
+                  </div>
+                </div>
+                
+                {/* Report Age */}
+                <div>
+                  <SdfInput
+                    label="Report Age (Days)"
+                    name="reportAge"
+                    type="number"
+                    value={formData.reportAge}
+                    onChange={handleInputChange}
+                    className="w-full bg-gray-700 border-gray-600 text-white"
+                  />
+                  {errors.reportAge && (
+                    <SdfAlert type="inline" status="error" className="mt-1">
+                      {errors.reportAge}
+                    </SdfAlert>
+                  )}
+                  <div className="text-xs text-gray-400 mt-1">
+                    Mutually exclusive with date range
+                  </div>
+                </div>
+                
+                {/* Report From Date */}
+                <div>
+                  <SdfInput
+                    label="Report From Date"
+                    name="reportFromDate"
+                    type="date"
+                    value={formData.reportFromDate}
+                    onChange={handleInputChange}
+                    className="w-full bg-gray-700 border-gray-600 text-white"
+                  />
+                  {errors.reportFromDate && (
+                    <SdfAlert type="inline" status="error" className="mt-1">
+                      {errors.reportFromDate}
+                    </SdfAlert>
+                  )}
+                  <div className="text-xs text-gray-400 mt-1">
+                    After 2001, mutually exclusive with age
+                  </div>
+                </div>
+                
+                {/* Report To Date */}
+                <div>
+                  <SdfInput
+                    label="Report To Date"
+                    name="reportToDate"
+                    type="date"
+                    value={formData.reportToDate}
+                    onChange={handleInputChange}
+                    className="w-full bg-gray-700 border-gray-600 text-white"
+                  />
+                  {errors.reportToDate && (
+                    <SdfAlert type="inline" status="error" className="mt-1">
+                      {errors.reportToDate}
+                    </SdfAlert>
+                  )}
+                  <div className="text-xs text-gray-400 mt-1">
+                    After 2001, mutually exclusive with age
+                  </div>
+                </div>
+                
+                {/* Report Per Page */}
+                <div>
+                  <SdfInput
+                    label="Report Per Page"
+                    name="reportPerPage"
+                    type="number"
+                    value={formData.reportPerPage}
+                    onChange={handleInputChange}
+                    className="w-full bg-gray-700 border-gray-600 text-white"
+                  />
+                  {errors.reportPerPage && (
+                    <SdfAlert type="inline" status="error" className="mt-1">
+                      {errors.reportPerPage}
+                    </SdfAlert>
+                  )}
+                  <div className="text-xs text-gray-400 mt-1">
+                    Between 1-100
+                  </div>
+                </div>
+              </div>
+
+              {/* ... (buttons remain the same) */}
+            </form>
+          )}
+
+        </SdfCard>
+
+        {/* ... (footer links remain the same) */}
+      </div>
+    </div>
+  );
+};
+
+export default SelectionCriteria;
