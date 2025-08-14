@@ -1,0 +1,33 @@
+// RACF ID validation
+  if (name === "racf_id") {
+    if (!value.trim()) {
+      setValidationErrors((prev) => ({ ...prev, racf_id: "RACF ID is required" }));
+    } else if (!/^[a-zA-Z0-9]{3,8}$/.test(value)) {
+      setValidationErrors((prev) => ({ ...prev, racf_id: "Invalid RACF ID format" }));
+    } else {
+      setValidationErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors.racf_id;
+        return newErrors;
+      });
+    }
+  }
+
+  // Password validation
+  if (name === "password") {
+    if (!value) {
+      setValidationErrors((prev) => ({ ...prev, password: "Password is required" }));
+    } else if (value.length < 8) {
+      setValidationErrors((prev) => ({ ...prev, password: "Password must be at least 8 characters" }));
+    } else if (!/[A-Z]/.test(value)) {
+      setValidationErrors((prev) => ({ ...prev, password: "Password must contain at least one uppercase letter" }));
+    } else if (!/[0-9]/.test(value)) {
+      setValidationErrors((prev) => ({ ...prev, password: "Password must contain at least one number" }));
+    } else {
+      setValidationErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors.password;
+        return newErrors;
+      });
+    }
+  }
