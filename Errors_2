@@ -1,0 +1,37 @@
+const handleChange: React.FormEventHandler<HTMLSdfInputElement> = (e) => {
+  const { name, value } = e.currentTarget as unknown as HTMLInputElement;
+
+  setFormData((prev) => ({
+    ...prev,
+    [name]: value
+  }));
+
+  // Live validation
+  const errors: ValidationErrors = { ...validationErrors };
+
+  if (name === "racf_id") {
+    if (!value.trim()) {
+      errors.racf_id = "RACF ID is required";
+    } else if (!/^[a-zA-Z0-9]{3,8}$/.test(value)) {
+      errors.racf_id = "Invalid RACF ID format";
+    } else {
+      delete errors.racf_id;
+    }
+  }
+
+  if (name === "password") {
+    if (!value) {
+      errors.password = "Password is required";
+    } else if (value.length < 8) {
+      errors.password = "Password must be at least 8 characters";
+    } else if (!/[A-Z]/.test(value)) {
+      errors.password = "Password must contain at least one uppercase letter";
+    } else if (!/[0-9]/.test(value)) {
+      errors.password = "Password must contain at least one number";
+    } else {
+      delete errors.password;
+    }
+  }
+
+  setValidationErrors(errors);
+};
