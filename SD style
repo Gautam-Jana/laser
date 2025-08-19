@@ -1,0 +1,18 @@
+const styles = {
+  width: "12rem",                // w-48
+  borderRadius: "0.5rem",        // rounded-lg
+  borderWidth: "1px",            // border
+  borderColor: "rgb(209 213 219)", // border-gray-300
+  boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)", // shadow-sm
+  backgroundColor: "#ffffff",    // bg-white
+  color: "rgb(31 41 55)",        // text-gray-800
+  transitionProperty: "all",     // transition
+  transitionDuration: "200ms",   // duration-200
+  outline: "none",               // focus:outline-none (default in Tailwind)
+};
+
+// Focus state ke liye alag likhna padega (kyunki inline object mein direct pseudo-classes nahi hoti):
+const focusStyles = {
+  boxShadow: "0 0 0 2px rgb(59 130 246)", // focus:ring-2 + focus:ring-blue-500
+  borderColor: "rgb(59 130 246)",         // focus:border-blue-500
+};
