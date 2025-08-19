@@ -1,0 +1,31 @@
+table {
+  border-collapse: collapse;   /* border-collapse */
+  width: 100%;                 /* w-full */
+  border-width: 1px;           /* border */
+  border-spacing: 0;           /* border-spacing-0 */
+  border-radius: 0.5rem;       /* rounded-lg (8px) */
+  border-style: solid;         /* border-solid */
+  border-color: var(--color-light); /* border-light (custom theme variable) */
+}
+
+thead {
+  font-weight: 400;                  /* font-normal */
+  background-color: var(--action-default-100); /* bg-action-default-100 (custom color) */
+}
+
+
+#participant-directory-table-header-name {
+  font-family: var(--font-default);  /* font-default (custom font family) */
+  text-align: left;                  /* text-left */
+  font-size: 1rem;                   /* text-md (16px) */
+  width: auto;                       /* w-auto */
+  padding: 1rem;                     /* p-4 overrides p-1 */
+  vertical-align: middle;            /* align-middle */
+  border-color: var(--color-dark);   /* border-dark (custom color) */
+  border-bottom-width: 1px;          /* border-b */
+  border-top-width: 0;               /* border-t-0 */
+  border-left-width: 0;              /* border-l-0 */
+  border-right-width: 0;             /* border-r-0 */
+  border-style: solid;               /* border-solid */
+  cursor: pointer;                   /* cursor-pointer */
+}
