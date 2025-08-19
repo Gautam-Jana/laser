@@ -1,0 +1,37 @@
+const mainCard: React.CSSProperties = {
+  position: "relative",                         // relative
+  backgroundColor: "rgba(255, 255, 255, 0.1)",  // bg-white/10
+  backdropFilter: "blur(24px)",                 // backdrop-blur-xl
+  boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)", // shadow-2xl
+  borderRadius: "1.5rem",                       // rounded-3xl
+  padding: "1.5rem",                            // p-6
+  borderWidth: "1px",                           // border
+  borderColor: "rgba(255, 255, 255, 0.2)",      // border-white/20
+  overflow: "hidden",                           // overflow-hidden
+};
+const filterButton = {
+  display: "flex",        // flex
+  alignItems: "flex-start", // items-start
+  justifyContent: "flex-end", // justify-end
+  height: "100%",         // h-full
+  padding: "2rem"         // p-8 (Tailwind 8 => 2rem)
+};
+
+
+const filterBox = {
+  display: "grid",
+  gridTemplateColumns: "repeat(1, minmax(0, 1fr))", // grid-cols-1
+  gap: "1rem", // gap-4
+
+  // responsive
+  "@media (min-width: 640px)": { // sm:
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  },
+  "@media (min-width: 768px)": { // md:
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+  },
+};
+
+
+
+
