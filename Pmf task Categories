@@ -1,0 +1,546 @@
+import React, { useState } from 'react';
+
+// Define types for our form data
+interface FormData {
+  region: string;
+  companyCode: string;
+}
+
+// Define types for validation errors
+interface ValidationErrors {
+  region?: string;
+  companyCode?: string;
+}
+
+// Define job data type
+interface JobData {
+  ticket: string;
+  jobName: string;
+  jobId: string;
+  priority: string;
+  procedure: string;
+  dueOut: string;
+  description: string;
+  company: string;
+  createTime: string;
+  submitTime: string;
+  status: string;
+}
+
+// Mock Sdf components - replace with your actual imports
+const SdfSelectSimple: React.FC<{
+  className?: string;
+  label: string;
+  value?: string;
+  onSdfChange?: (event: CustomEvent<{ value: string }>) => void;
+  invalid?: boolean;
+  errorText?: string;
+  filterable?: boolean;
+  loading?: boolean;
+}> = ({ className, label, value, onSdfChange, invalid, errorText, filterable, loading }) => (
+  <div className={className}>
+    <label>{label}</label>
+    <select 
+      value={value} 
+      onChange={(e) => onSdfChange?.(new CustomEvent('change', { detail: { value: e.target.value } }))}
+      style={{ borderColor: invalid ? 'red' : undefined }}
+    >
+      <option value="">Select {label}</option>
+      <option value="north">North Region</option>
+      <option value="south">South Region</option>
+      <option value="east">East Region</option>
+      <option value="west">West Region</option>
+    </select>
+    {invalid && <span style={{ color: 'red', fontSize: '0.875rem' }}>{errorText}</span>}
+  </div>
+);
+
+const SdfAvatar: React.FC<{
+  className?: string;
+  initials?: string;
+  icon?: string;
+  shape?: string;
+  size?: string;
+}> = ({ className, initials, icon }) => (
+  <div className={className}>{initials || (icon && <span>Icon</span>)}</div>
+);
+
+const SdfButton: React.FC<{
+  className?: string;
+  icon?: string;
+  onClick?: () => void;
+  children: React.ReactNode;
+}> = ({ className, icon, onClick, children }) => (
+  <button className={className} onClick={onClick}>
+    {icon && <span>Icon</span>} {children}
+  </button>
+);
+
+const SdfCard: React.FC<{
+  className?: string;
+  children: React.ReactNode;
+}> = ({ className, children }) => (
+  <div className={className}>{children}</div>
+);
+
+const SdfBox: React.FC<{
+  className?: string;
+  children: React.ReactNode;
+}> = ({ className, children }) => (
+  <div className={className}>{children}</div>
+);
+
+const SdfTabGroup: React.FC<{
+  children: React.ReactNode;
+}> = ({ children }) => (
+  <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb' }}>{children}</div>
+);
+
+const SdfTab: React.FC<{
+  active?: boolean;
+  icon?: string;
+  children: React.ReactNode;
+}> = ({ active, icon, children }) => (
+  <div style={{ 
+    padding: '0.75rem 1rem', 
+    borderBottom: active ? '2px solid #3b82f6' : 'none',
+    fontWeight: active ? 'bold' : 'normal',
+    color: active ? '#3b82f6' : '#6b7280'
+  }}>
+    {icon && <span style={{ marginRight: '0.5rem' }}>Icon</span>}
+    {children}
+  </div>
+);
+
+const SfcShellAppBar: React.FC<{
+  size: string;
+  children: React.ReactNode;
+}> = ({ size, children }) => (
+  <div style={{ 
+    padding: '1rem', 
+    backgroundColor: '#f3f4f6', 
+    display: 'flex', 
+    alignItems: 'center', 
+    gap: '1rem',
+    borderBottom: '1px solid #e5e7eb'
+  }}>
+    {children}
+  </div>
+);
+
+const SfcShellAppBarSearch: React.FC<{
+  slot: string;
+}> = ({ slot }) => (
+  <input 
+    type="search" 
+    placeholder="Search..." 
+    style={{ 
+      padding: '0.5rem', 
+      borderRadius: '0.375rem', 
+      border: '1px solid #d1d5db',
+      flex: 1,
+      maxWidth: '300px'
+    }} 
+  />
+);
+
+const Main: React.FC = () => {
+  // State for form data
+  const [formData, setFormData] = useState<FormData>({
+    region: '',
+    companyCode: ''
+  });
+
+  // State for validation errors
+  const [errors, setErrors] = useState<ValidationErrors>({});
+
+  // State for job data
+  const [jobData, setJobData] = useState<JobData[]>([
+    {
+      ticket: 'T001',
+      jobName: 'Data Processing',
+      jobId: 'J001',
+      priority: 'High',
+      procedure: 'Standard',
+      dueOut: '2023-12-15',
+      description: 'Process monthly data',
+      company: 'Company A',
+      createTime: '2023-12-01 09:00',
+      submitTime: '2023-12-01 10:00',
+      status: 'Active'
+    },
+    {
+      ticket: 'T002',
+      jobName: 'Report Generation',
+      jobId: 'J002',
+      priority: 'Medium',
+      procedure: 'Standard',
+      dueOut: '2023-12-16',
+      description: 'Generate monthly reports',
+      company: 'Company B',
+      createTime: '2023-12-02 09:00',
+      submitTime: '2023-12-02 10:00',
+      status: 'Submitted'
+    },
+    {
+      ticket: 'T003',
+      jobName: 'Data Backup',
+      jobId: 'J003',
+      priority: 'Low',
+      procedure: 'Standard',
+      dueOut: '2023-12-17',
+      description: 'Backup database',
+      company: 'Company C',
+      createTime: '2023-12-03 09:00',
+      submitTime: '2023-12-03 10:00',
+      status: 'Completed'
+    }
+  ]);
+
+  // Validation function
+  const validateForm = (): boolean => {
+    const newErrors: ValidationErrors = {};
+
+    if (!formData.region) {
+      newErrors.region = 'Region is required';
+    }
+
+    if (!formData.companyCode) {
+      newErrors.companyCode = 'Company Code is required';
+    } else if (!/^[A-Z0-9]{3,10}$/.test(formData.companyCode)) {
+      newErrors.companyCode = 'Company Code must be 3-10 alphanumeric characters';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Handle form field changes
+  const handleInputChange = (field: keyof FormData, value: string) => {
+    setFormData({
+      ...formData,
+      [field]: value
+    });
+
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors({
+        ...errors,
+        [field]: undefined
+      });
+    }
+  };
+
+  // Handle form submission
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validateForm()) {
+      // Form is valid, proceed with submission
+      console.log('Form data:', formData);
+      alert('Form submitted successfully!');
+    }
+  };
+
+  // Refresh job status
+  const refreshJobStatus = () => {
+    // Simulate API call to refresh job status
+    const updatedJobs = jobData.map(job => ({
+      ...job,
+      status: ['Active', 'Submitted', 'Completed', 'Queued', 'Waiting', 'Incomplete', 'Problem'][
+        Math.floor(Math.random() * 7)
+      ]
+    }));
+    setJobData(updatedJobs);
+    alert('Job status refreshed!');
+  };
+
+  return (
+    <div>
+      <SfcShellAppBar size="small">
+        <SfcShellAppBarSearch slot="search" />
+        <SdfAvatar initials="GJ" />
+        Production Management Facilities
+      </SfcShellAppBar>
+
+      <form onSubmit={handleSubmit}>
+        <SdfSelectSimple
+          className="m-10 w-full max-w-xs rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 bg-white text-gray-800"
+          label="Region"
+          filterable
+          value={formData.region}
+          onSdfChange={(e: any) => handleInputChange('region', e.detail.value)}
+          invalid={!!errors.region}
+          errorText={errors.region}
+        />
+
+        <SdfSelectSimple
+          className="m-10 w-full max-w-xs rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 bg-white text-gray-800"
+          label="Company Code"
+          filterable
+          value={formData.companyCode}
+          onSdfChange={(e: any) => handleInputChange('companyCode', e.detail.value)}
+          invalid={!!errors.companyCode}
+          errorText={errors.companyCode}
+        />
+
+        <SdfButton type="submit" className="m-10 px-4 py-2 bg-blue-600 text-white rounded-lg">
+          Validate and Submit
+        </SdfButton>
+      </form>
+
+      <SdfTabGroup>
+        <SdfTab active icon="ext-mdi-event-available">Task Categories</SdfTab>
+        <SdfTab icon="ext-mdi-inventory">Generic Task</SdfTab>
+        <SdfTab icon="hase-gift">Job Monitor</SdfTab>
+        <SdfTab icon="action-upload">Input Files</SdfTab>
+        <SdfTab icon="action-help">Help</SdfTab>
+        <SdfTab icon="action-confirm">Output Files</SdfTab>
+      </SdfTabGroup>
+
+      <SdfCard className="rounded-xl shadow-lg p-4 bg-white border border-gray-200 transition duration-300 hover:shadow-xl hover:-translate-y-1 mt-4">
+        <div className="flex justify-between items-center mb-2 ml-4 pb-4 border-b border-gray-700">
+          <h2 className="text-[20px] font-bold">Task Categories</h2>
+        </div>
+        
+        <SdfBox className="flex gap-3 py-3">
+          <div>
+            <div className="flex flex-col font-black">
+              <SdfAvatar
+                className="m-2 rounded-full w-16 h-16 bg-gradient-to-tr from-purple-500 to-indigo-600 text-white text-lg font-bold shadow-xl border-4 border-white ring-4 ring-purple-300 ring-offset-2 hover:scale-110 hover:-rotate-3 hover:shadow-2xl transition-all duration-300 ease-in-out cursor-pointer"
+                icon="contact-card"
+              />
+              <span className="ml-6">CSS-ESS</span>
+            </div>
+            
+            <div className="flex flex-col font-black mt-5">
+              <SdfAvatar
+                className="m-2 rounded-full w-16 h-16 bg-gradient-to-tr from-purple-500 to-indigo-600 text-white text-lg font-bold shadow-xl border-4 border-white ring-4 ring-purple-300 ring-offset-2 hover:scale-110 hover:-rotate-3 hover:shadow-2xl transition-all duration-300 ease-in-out cursor-pointer"
+                icon="contact-card"
+              />
+              <span className="ml-6">Payroll-General Ledger</span>
+            </div>
+            
+            <div className="flex flex-col font-black">
+              <SdfAvatar
+                className="m-2 rounded-full w-16 h-16 bg-gradient-to-tr from-purple-500 to-indigo-600 text-white text-lg font-bold shadow-xl border-4 border-white ring-4 ring-purple-300 ring-offset-2 hover:scale-110 hover:-rotate-3 hover:shadow-2xl transition-all duration-300 ease-in-out cursor-pointer"
+                icon="contact-card"
+              />
+              <span className="ml-6">Laser Printing Support</span>
+            </div>
+            
+            <div className="flex flex-col font-black">
+              <SdfAvatar
+                className="m-2 rounded-full w-16 h-16 bg-gradient-to-tr from-purple-500 to-indigo-600 text-white text-lg font-bold shadow-xl border-4 border-white ring-4 ring-purple-300 ring-offset-2 hover:scale-110 hover:-rotate-3 hover:shadow-2xl transition-all duration-300 ease-in-out cursor-pointer"
+                icon="contact-card"
+              />
+              <span className="ml-6">Partnership Interfaces</span>
+            </div>
+          </div>
+          
+          <div className="ml-10">
+            <div className="flex flex-col font-black">
+              <SdfAvatar
+                className="m-2 rounded-full w-16 h-16 bg-gradient-to-tr from-purple-500 to-indigo-600 text-white text-lg font-bold shadow-xl border-4 border-white ring-4 ring-purple-300 ring-offset-2 hover:scale-110 hover:-rotate-3 hover:shadow-2xl transition-all duration-300 ease-in-out cursor-pointer"
+                icon="contact-card"
+              />
+              <span className="ml-6">CCI Payroll Control File</span>
+            </div>
+            
+            <div className="flex flex-col font-black">
+              <SdfAvatar
+                className="m-2 rounded-full w-16 h-16 bg-gradient-to-tr from-purple-500 to-indigo-600 text-white text-lg font-bold shadow-xl border-4 border-white ring-4 ring-purple-300 ring-offset-2 hover:scale-110 hover:-rotate-3 hover:shadow-2xl transition-all duration-300 ease-in-out cursor-pointer"
+                icon="contact-card"
+              />
+              <span className="ml-6">Ledger</span>
+            </div>
+            
+            <div className="flex flex-col font-black mt-5">
+              <SdfAvatar
+                className="m-2 rounded-full w-16 h-16 bg-gradient-to-tr from-purple-500 to-indigo-600 text-white text-lg font-bold shadow-xl border-4 border-white ring-4 ring-purple-300 ring-offset-2 hover:scale-110 hover:-rotate-3 hover:shadow-2xl transition-all duration-300 ease-in-out cursor-pointer"
+                icon="contact-card"
+              />
+              <span className="ml-6">Datapool</span>
+            </div>
+            
+            <div className="flex flex-col font-black mt-5">
+              <SdfAvatar
+                className="m-2 rounded-full w-16 h-16 bg-gradient-to-tr from-purple-500 to-indigo-600 text-white text-lg font-bold shadow-xl border-4 border-white ring-4 ring-purple-300 ring-offset-2 hover:scale-110 hover:-rotate-3 hover:shadow-2xl transition-all duration-300 ease-in-out cursor-pointer"
+                icon="contact-card"
+              />
+              <span className="ml-6">Conversions</span>
+            </div>
+          </div>
+          
+          <div className="ml-10">
+            <div className="flex flex-col font-black">
+              <SdfAvatar
+                className="m-2 rounded-full w-16 h-16 bg-gradient-to-tr from-purple-500 to-indigo-600 text-white text-lg font-bold shadow-xl border-4 border-white ring-4 ring-purple-300 ring-offset-2 hover:scale-110 hover:-rotate-3 hover:shadow-2xl transition-all duration-300 ease-in-out cursor-pointer"
+                icon="contact-card"
+              />
+              <span className="ml-6">Employee Master File</span>
+            </div>
+            
+            <div className="flex flex-col font-black">
+              <SdfAvatar
+                className="m-2 rounded-full w-16 h-16 bg-gradient-to-tr from-purple-500 to-indigo-600 text-white text-lg font-bold shadow-xl border-4 border-white ring-4 ring-purple-300 ring-offset-2 hover:scale-110 hover:-rotate-3 hover:shadow-2xl transition-all duration-300 ease-in-out cursor-pointer"
+                icon="contact-card"
+              />
+              <span className="ml-6">Tax Filling</span>
+            </div>
+            
+            <div className="flex flex-col font-black mt-5">
+              <SdfAvatar
+                className="m-2 rounded-full w-16 h-16 bg-gradient-to-tr from-purple-500 to-indigo-600 text-white text-lg font-bold shadow-xl border-4 border-white ring-4 ring-purple-300 ring-offset-2 hover:scale-110 hover:-rotate-3 hover:shadow-2xl transition-all duration-300 ease-in-out cursor-pointer"
+                icon="contact-card"
+              />
+              <span className="ml-6">Billing</span>
+            </div>
+            
+            <div className="flex flex-col font-black mt-5">
+              <SdfAvatar
+                className="m-2 rounded-full w-16 h-16 bg-gradient-to-tr from-purple-500 to-indigo-600 text-white text-lg font-bold shadow-xl border-4 border-white ring-4 ring-purple-300 ring-offset-2 hover:scale-110 hover:-rotate-3 hover:shadow-2xl transition-all duration-300 ease-in-out cursor-pointer"
+                icon="contact-card"
+              />
+              <span className="ml-6">Miscellaneous</span>
+            </div>
+          </div>
+          
+          <div className="ml-16">
+            <div className="flex flex-col font-black">
+              <SdfAvatar
+                className="m-2 rounded-full w-16 h-16 bg-gradient-to-tr from-purple-500 to-indigo-600 text-white text-lg font-bold shadow-xl border-4 border-white ring-4 ring-purple-300 ring-offset-2 hover:scale-110 hover:-rotate-3 hover:shadow-2xl transition-all duration-300 ease-in-out cursor-pointer"
+                icon="contact-card"
+              />
+              <span className="ml-6">Prelist Edit/Net/Wrap</span>
+            </div>
+            
+            <div className="flex flex-col font-black mt-5">
+              <SdfAvatar
+                className="m-2 rounded-full w-16 h-16 bg-gradient-to-tr from-purple-500 to-indigo-600 text-white text-lg font-bold shadow-xl border-4 border-white ring-4 ring-purple-300 ring-offset-2 hover:scale-110 hover:-rotate-3 hover:shadow-2xl transition-all duration-300 ease-in-out cursor-pointer"
+                icon="contact-card"
+              />
+              <span className="ml-6">Banking Interface</span>
+            </div>
+            
+            <div className="flex flex-col font-black mt-5">
+              <SdfAvatar
+                className="m-2 rounded-full w-16 h-16 bg-gradient-to-tr from-purple-500 to-indigo-600 text-white text-lg font-bold shadow-xl border-4 border-white ring-4 ring-purple-300 ring-offset-2 hover:scale-110 hover:-rotate-3 hover:shadow-2xl transition-all duration-300 ease-in-out cursor-pointer"
+                icon="contact-card"
+              />
+              <span className="ml-6">New Business Acquisition</span>
+            </div>
+            
+            <div className="flex flex-col font-black mt-5">
+              <SdfAvatar
+                className="m-2 rounded-full w-16 h-16 bg-gradient-to-tr from-purple-500 to-indigo-600 text-white text-lg font-bold shadow-xl border-4 border-white ring-4 ring-purple-300 ring-offset-2 hover:scale-110 hover:-rotate-3 hover:shadow-2xl transition-all duration-300 ease-in-out cursor-pointer"
+                icon="contact-card"
+              />
+              <span className="ml-6">Data Retention & Purge Management</span>
+            </div>
+          </div>
+          
+          <div className="mr-12">
+            <div className="flex flex-col font-black">
+              <SdfAvatar
+                className="m-2 rounded-full w-16 h-16 bg-gradient-to-tr from-purple-500 to-indigo-600 text-white text-lg font-bold shadow-xl border-4 border-white ring-4 ring-purple-300 ring-offset-2 hover:scale-110 hover:-rotate-3 hover:shadow-2xl transition-all duration-300 ease-in-out cursor-pointer"
+                icon="contact-card"
+              />
+              <span className="ml-6">Payroll Reruns</span>
+            </div>
+            
+            <div className="flex flex-col font-black mt-5">
+              <SdfAvatar
+                className="m-2 rounded-full w-16 h-16 bg-gradient-to-tr from-purple-500 to-indigo-600 text-white text-lg font-bold shadow-xl border-4 border-white ring-4 ring-purple-300 ring-offset-2 hover:scale-110 hover:-rotate-3 hover:shadow-2xl transition-all duration-300 ease-in-out cursor-pointer"
+                icon="contact-card"
+              />
+              <span className="ml-6">History</span>
+            </div>
+            
+            <div className="flex flex-col font-black mt-5">
+              <SdfAvatar
+                className="m-2 rounded-full w-16 h-16 bg-gradient-to-tr from-purple-500 to-indigo-600 text-white text-lg font-bold shadow-xl border-4 border-white ring-4 ring-purple-300 ring-offset-2 hover:scale-110 hover:-rotate-3 hover:shadow-2xl transition-all duration-300 ease-in-out cursor-pointer"
+                icon="contact-card"
+              />
+              <span className="ml-6">New Output System</span>
+            </div>
+          </div>
+        </SdfBox>
+      </SdfCard>
+
+      <SdfCard className="rounded-xl shadow-lg p-4 bg-white border border-gray-200 transition duration-300 hover:shadow-xl hover:-translate-y-1 mt-4">
+        <SdfCard className="mb-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center">
+              <span className="font-black mr-4">Job Status</span>
+              <div className="flex gap-4">
+                <div className="flex gap-1">
+                  <span className="font-bold">A</span> <span>Active</span>
+                </div>
+                <div className="flex gap-1">
+                  <span className="font-bold">S</span> <span>Submitted</span>
+                </div>
+                <div className="flex gap-1">
+                  <span className="font-bold">C</span> <span>Completed</span>
+                </div>
+                <div className="flex gap-1">
+                  <span className="font-bold">Q</span> <span>Queued</span>
+                </div>
+                <div className="flex gap-1">
+                  <span className="font-bold">W</span> <span>Waiting</span>
+                </div>
+                <div className="flex gap-1">
+                  <span className="font-bold">I</span> <span>Incomplete</span>
+                </div>
+                <div className="flex gap-1">
+                  <span className="font-bold">P</span> <span>Problem</span>
+                </div>
+              </div>
+            </div>
+            <SdfButton icon="action-refresh" className="px-4 py-2 bg-blue-600 text-white rounded-lg" onClick={refreshJobStatus}>
+              Refresh Job Status
+            </SdfButton>
+          </div>
+        </SdfCard>
+
+        <SdfBox className="flex gap-3 py-3">
+          <table className="w-full table-auto text-sm text-left text-gray-700 border-separate border-spacing-y-2">
+            <thead className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg shadow">
+              <tr className="text-left">
+                <th scope="col" className="px-6 py-3 rounded-l-lg">Ticket#</th>
+                <th scope="col" className="px-6 py-3">Job Name</th>
+                <th scope="col" className="px-6 py-3">Job Id</th>
+                <th scope="col" className="px-6 py-3">Priority</th>
+                <th scope="col" className="px-6 py-3">Procedure</th>
+                <th scope="col" className="px-6 py-3">Due Out</th>
+                <th scope="col" className="px-6 py-3">Description</th>
+                <th scope="col" className="px-6 py-3">Company</th>
+                <th scope="col" className="px-6 py-3">Create Time</th>
+                <th scope="col" className="px-6 py-3">Submit Time</th>
+                <th scope="col" className="px-6 py-3 rounded-r-lg">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {jobData.map((job, index) => (
+                <tr key={index} className="bg-white hover:bg-indigo-50 transition shadow rounded-lg">
+                  <td className="px-6 py-4 rounded-l-lg border border-gray-200">{job.ticket}</td>
+                  <td className="px-6 py-4 border border-gray-200">{job.jobName}</td>
+                  <td className="px-6 py-4 border border-gray-200">{job.jobId}</td>
+                  <td className="px-6 py-4 border border-gray-200">{job.priority}</td>
+                  <td className="px-6 py-4 border border-gray-200">{job.procedure}</td>
+                  <td className="px-6 py-4 border border-gray-200">{job.dueOut}</td>
+                  <td className="px-6 py-4 border border-gray-200">{job.description}</td>
+                  <td className="px-6 py-4 border border-gray-200">{job.company}</td>
+                  <td className="px-6 py-4 border border-gray-200">{job.createTime}</td>
+                  <td className="px-6 py-4 border border-gray-200">{job.submitTime}</td>
+                  <td className="px-6 py-4 rounded-r-lg border border-gray-200">{job.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </SdfBox>
+      </SdfCard>
+    </div>
+  );
+};
+
+export default Main;
