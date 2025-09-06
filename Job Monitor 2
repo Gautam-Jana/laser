@@ -1,0 +1,710 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  SdfBox, 
+  SdfBoxHeader, 
+  SdfButton, 
+  SdfCard, 
+  SdfCheckbox, 
+  SdfCheckboxGroup, 
+  SdfExpandableBox, 
+  SdfIcon,
+  SdfInput, 
+  SdfLink, 
+  SdfPagination, 
+  SdfSearch, 
+  SdfSelect, 
+  SdfSelectItem, 
+  SfcShellAppBar 
+} from '@waypoint/react-components';
+
+// Define types for our data
+interface Ticket {
+  id: string;
+  schema: string;
+  phoneNumber: string;
+  priority: number;
+  procedures: string;
+  userId: string;
+  class: string;
+  status: string;
+  routePrint: string;
+}
+
+interface FilterState {
+  groupBy: string;
+  statusFilters: {
+    problem: boolean;
+    active: boolean;
+    submitted: boolean;
+    queued: boolean;
+    waiting: boolean;
+    completed: boolean;
+    incomplete: boolean;
+  };
+  schemas: Record<string, boolean>;
+  procedure: string;
+  userId: string;
+  fetchPreviousOnly: boolean;
+}
+
+function Main() {
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [filterState, setFilterState] = useState<FilterState>({
+    groupBy: '',
+    statusFilters: {
+      problem: false,
+      active: false,
+      submitted: false,
+      queued: false,
+      waiting: false,
+      completed: false,
+      incomplete: false
+    },
+    schemas: {},
+    procedure: '',
+    userId: '',
+    fetchPreviousOnly: false
+  });
+  const [selectedTickets, setSelectedTickets] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [isOptionsExpanded, setIsOptionsExpanded] = useState(false);
+
+  // Schema options
+  const schemaOptions = [
+    'APL2', 'APL3', 'DV81', 'WAP7', 'WAP8', 'WAP9', 'WAPA', 
+    'PAB1', 'PAB2', 'PAB3', 'PAB4', 'PAB5', 'BASE', 'PAGG', 
+    'REGR', 'STAT', 'TOTC', 'UREG', 'ZAP7', 'ZAP8', 'ZEGR'
+  ];
+
+  // Sample data from the images
+  const sampleTickets: Ticket[] = [
+    { id: '1', schema: 'APL2', phoneNumber: '639-A 107', priority: 0, procedures: '', userId: '', class: '', status: '', routePrint: '' },
+    { id: '2', schema: 'APL3', phoneNumber: '637-A 011', priority: 0, procedures: '', userId: '255860', class: 'FNET0000', status: '', routePrint: '' },
+    { id: '3', schema: 'APL3', phoneNumber: '637-A @11', priority: 5, procedures: 'A25958G0', userId: 'PNET0000', class: '1', status: 'M', routePrint: 'C' },
+    { id: '4', schema: 'APL3', phoneNumber: '637-A @11', priority: 5, procedures: 'A25958G0', userId: 'PNET0000', class: '1', status: 'M', routePrint: '' },
+    { id: '5', schema: 'APL3', phoneNumber: '637-A 011', priority: 5, procedures: 'A259586U', userId: 'PNET0000', class: '4', status: 'N', routePrint: '' },
+    { id: '6', schema: 'APL3', phoneNumber: '637-A 011', priority: 5, procedures: 'A259586U', userId: 'PNET0000', class: '4', status: 'N', routePrint: '' },
+    { id: '7', schema: 'APL3', phoneNumber: '637-A 011', priority: 5, procedures: 'A259586U', userId: 'PNET0000', class: '4', status: 'N', routePrint: '' },
+    // Add more tickets as needed based on your images
+  ];
+
+  // Initialize schemas state and load sample data
+  useEffect(() => {
+    const initialSchemas: Record<string, boolean> = {};
+    schemaOptions.forEach(schema => {
+      initialSchemas[schema] = false;
+    });
+    setFilterState(prev => ({ ...prev, schemas: initialSchemas }));
+    setTickets(sampleTickets);
+  }, []);
+
+  // Fetch tickets from API
+  const fetchTickets = async () => {
+    setIsLoading(true);
+    try {
+      // In a real application, this would be an API call
+      const response = await fetch('/api/tickets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(filterState)
+      });
+      const data = await response.json();
+      setTickets(data);
+    } catch (error) {
+      console.error('Failed to fetch tickets:', error);
+      // Fallback to sample data if API fails
+      setTickets(sampleTickets);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Auto-refresh effect
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+    
+    if (autoRefresh) {
+      intervalId = setInterval(() => {
+        fetchTickets();
+      }, 30000); // Refresh every 30 seconds
+    }
+    
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [autoRefresh]);
+
+  const handleApply = () => {
+    fetchTickets();
+  };
+
+  const handleCancel = () => {
+    // Reset to previous filter state
+    setFilterState(prevState => ({ ...prevState }));
+  };
+
+  const handleReset = () => {
+    setFilterState(prev => ({
+      ...prev,
+      groupBy: '',
+      statusFilters: {
+        problem: false,
+        active: false,
+        submitted: false,
+        queued: false,
+        waiting: false,
+        completed: false,
+        incomplete: false
+      },
+      procedure: '',
+      userId: '',
+      fetchPreviousOnly: false,
+      schemas: Object.fromEntries(Object.keys(prev.schemas).map(key => [key, false]))
+    }));
+  };
+
+  const handleRefresh = () => {
+    fetchTickets();
+  };
+
+  const handleSetRefresh = () => {
+    setAutoRefresh(prev => !prev);
+  };
+
+  const handleResubmit = async () => {
+    if (selectedTickets.length === 0) {
+      alert('Please select at least one ticket to resubmit');
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/tickets/resubmit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ticketIds: selectedTickets })
+      });
+      
+      if (response.ok) {
+        alert('Tickets resubmitted successfully');
+        fetchTickets(); // Refresh the list
+      } else {
+        alert('Failed to resubmit tickets');
+      }
+    } catch (error) {
+      console.error('Failed to resubmit tickets:', error);
+      alert('Failed to resubmit tickets');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleMark = async () => {
+    if (selectedTickets.length === 0) {
+      alert('Please select at least one ticket to mark');
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/tickets/mark', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ticketIds: selectedTickets })
+      });
+      
+      if (response.ok) {
+        alert('Tickets marked successfully');
+        fetchTickets(); // Refresh the list
+      } else {
+        alert('Failed to mark tickets');
+      }
+    } catch (error) {
+      console.error('Failed to mark tickets:', error);
+      alert('Failed to mark tickets');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (selectedTickets.length === 0) {
+      alert('Please select at least one ticket to delete');
+      return;
+    }
+    
+    if (!confirm('Are you sure you want to delete the selected tickets?')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/tickets/delete', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ticketIds: selectedTickets })
+      });
+      
+      if (response.ok) {
+        alert('Tickets deleted successfully');
+        fetchTickets(); // Refresh the list
+        setSelectedTickets([]); // Clear selection
+      } else {
+        alert('Failed to delete tickets');
+      }
+    } catch (error) {
+      console.error('Failed to delete tickets:', error);
+      alert('Failed to delete tickets');
+    }
+  };
+
+  const handleCancelCompany = async () => {
+    // Get unique companies from selected tickets
+    const companies = [...new Set(
+      tickets
+        .filter(ticket => selectedTickets.includes(ticket.id))
+        .map(ticket => ticket.class) // Assuming class represents company
+    )];
+    
+    if (companies.length === 0) {
+      alert('Please select at least one ticket from a company');
+      return;
+    }
+    
+    if (!confirm(`Are you sure you want to cancel all jobs for company(ies): ${companies.join(', ')}?`)) {
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/tickets/cancel-company', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ companies })
+      });
+      
+      if (response.ok) {
+        alert('Company jobs cancelled successfully');
+        fetchTickets(); // Refresh the list
+      } else {
+        alert('Failed to cancel company jobs');
+      }
+    } catch (error) {
+      console.error('Failed to cancel company jobs:', error);
+      alert('Failed to cancel company jobs');
+    }
+  };
+
+  const handleCancelJob = async () => {
+    if (selectedTickets.length === 0) {
+      alert('Please select at least one job to cancel');
+      return;
+    }
+    
+    if (!confirm('Are you sure you want to cancel the selected jobs?')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/tickets/cancel-job', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ticketIds: selectedTickets })
+      });
+      
+      if (response.ok) {
+        alert('Jobs cancelled successfully');
+        fetchTickets(); // Refresh the list
+      } else {
+        alert('Failed to cancel jobs');
+      }
+    } catch (error) {
+      console.error('Failed to cancel jobs:', error);
+      alert('Failed to cancel jobs');
+    }
+  };
+
+  const handleSubmit = () => {
+    // This would typically submit a form or perform a final action
+    alert('Form submitted successfully');
+  };
+
+  const handleSelectAllSchemas = () => {
+    setFilterState(prev => ({
+      ...prev,
+      schemas: Object.fromEntries(Object.keys(prev.schemas).map(key => [key, true]))
+    }));
+  };
+
+  const handleSelectNoneSchemas = () => {
+    setFilterState(prev => ({
+      ...prev,
+      schemas: Object.fromEntries(Object.keys(prev.schemas).map(key => [key, false]))
+    }));
+  };
+
+  const handleSchemaChange = (schema: string, checked: boolean) => {
+    setFilterState(prev => ({
+      ...prev,
+      schemas: { ...prev.schemas, [schema]: checked }
+    }));
+  };
+
+  const handleStatusChange = (status: keyof FilterState['statusFilters'], checked: boolean) => {
+    setFilterState(prev => ({
+      ...prev,
+      statusFilters: { ...prev.statusFilters, [status]: checked }
+    }));
+  };
+
+  const handleTicketSelection = (ticketId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedTickets(prev => [...prev, ticketId]);
+    } else {
+      setSelectedTickets(prev => prev.filter(id => id !== ticketId));
+    }
+  };
+
+  return (
+    <div>
+      <SdfCard>
+        <SfcShellAppBar size="small" className="mb-2">PNF</SfcShellAppBar>
+        <SdfCard className="mb-6">
+          <div className="flex">
+            <SdfIcon icon="pto-personal"></SdfIcon>
+            <span className="font-black mt-2">Global Production Monitor</span>
+            <SdfButton icon="action-hab" className="ml-48">Help</SdfButton>
+          </div>
+        </SdfCard>
+        
+        <SdfBox>
+          <SdfExpandableBox
+            elevation="default"
+            trigger-alignment="start"
+            variant="shadowed"
+            trigger-placements="after"
+            collapse-label="" 
+            expand-label="Show Options"
+            spacing="tight"
+            heading-level=""
+            expanded={isOptionsExpanded}
+            onToggle={() => setIsOptionsExpanded(!isOptionsExpanded)}
+          >
+            <SdfLink onClick={() => setIsOptionsExpanded(false)}>
+              <SdfBoxHeader className="n1-2">Hide Options</SdfBoxHeader>
+            </SdfLink>
+            
+            <SdfCard>
+              <SdfSelect 
+                className="w-60 n1-4" 
+                label="Group By:"
+                value={filterState.groupBy}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => 
+                  setFilterState({...filterState, groupBy: e.target.value})
+                }
+              >
+                <SdfSearch className="w-40"></SdfSearch>
+                <SdfSelectItem value="class">class</SdfSelectItem>
+                <SdfSelectItem value="Company">Company</SdfSelectItem>
+                <SdfSelectItem value="Company Processing">Company Processing</SdfSelectItem>
+                <SdfSelectItem value="Department Desc">Department Desc</SdfSelectItem>
+                <SdfSelectItem value="Due Out">Due Out</SdfSelectItem>
+                <SdfSelectItem value="Event Number">Event Number</SdfSelectItem>
+                <SdfSelectItem value="Execute Name">Execute Name</SdfSelectItem>
+                <SdfSelectItem value="Global Monitor Group">Global Monitor Group</SdfSelectItem>
+                <SdfSelectItem value="Job Description">Job Description</SdfSelectItem>
+                <SdfSelectItem value="Job ID">Job ID</SdfSelectItem>
+                <SdfSelectItem value="Job Name">Job Name</SdfSelectItem>
+                <SdfSelectItem value="None">None</SdfSelectItem>
+                <SdfSelectItem value="Number">Number</SdfSelectItem>
+                <SdfSelectItem value="Printer Name">Printer Name</SdfSelectItem>
+                <SdfSelectItem value="Priority">Priority</SdfSelectItem>
+                <SdfSelectItem value="Procedure">Procedure</SdfSelectItem>
+                <SdfSelectItem value="Route Print">Route Print</SdfSelectItem>
+                <SdfSelectItem value="Special Instructions">Special Instructions</SdfSelectItem>
+                <SdfSelectItem value="Specials">Specials</SdfSelectItem>
+                <SdfSelectItem value="Status">Status</SdfSelectItem>
+                <SdfSelectItem value="Task Number">Task Number</SdfSelectItem>
+                <SdfSelectItem value="User ID">User ID</SdfSelectItem>
+              </SdfSelect>
+              
+              <SdfCard className="flex items-start justify-end min-h-screen mt-8">
+                <SdfCheckboxGroup label="Status">
+                  <div>
+                    <SdfCheckbox 
+                      label="Problem" 
+                      value="problem" 
+                      className="n-4 gap-1"
+                      checked={filterState.statusFilters.problem}
+                      onChange={(e) => handleStatusChange('problem', e.target.checked)}
+                    />
+                    <SdfCheckbox
+                      label="Active"
+                      value="active"
+                      className="n-4"
+                      checked={filterState.statusFilters.active}
+                      onChange={(e) => handleStatusChange('active', e.target.checked)}
+                    />
+                    <SdfCheckbox 
+                      label="Submitted" 
+                      value="submitted" 
+                      className="n-4 gap-1"
+                      checked={filterState.statusFilters.submitted}
+                      onChange={(e) => handleStatusChange('submitted', e.target.checked)}
+                    />
+                  </div>
+                  <div>
+                    <SdfCheckbox 
+                      label="Queued" 
+                      value="queued" 
+                      className="n-4 gap-1"
+                      checked={filterState.statusFilters.queued}
+                      onChange={(e) => handleStatusChange('queued', e.target.checked)}
+                    />
+                    <SdfCheckbox 
+                      label="Waiting" 
+                      value="waiting" 
+                      className="n-4 gap-1"
+                      checked={filterState.statusFilters.waiting}
+                      onChange={(e) => handleStatusChange('waiting', e.target.checked)}
+                    />
+                    <SdfCheckbox 
+                      label="Completed" 
+                      value="completed" 
+                      className="n-4 gap-1"
+                      checked={filterState.statusFilters.completed}
+                      onChange={(e) => handleStatusChange('completed', e.target.checked)}
+                    />
+                  </div>
+                  <SdfCheckbox 
+                    label="Incomplete" 
+                    value="incomplete" 
+                    className="n-4 gap-1"
+                    checked={filterState.statusFilters.incomplete}
+                    onChange={(e) => handleStatusChange('incomplete', e.target.checked)}
+                  />
+                </SdfCheckboxGroup>
+              </SdfCard>
+              
+              <SdfCard className="w-[708px] max-w-2xl p-4 rounded-xl bg-white flex items-start justify-start absolute border border-gray-200 top-4 left-4 mt-20">
+                <div className="mb-3">
+                  <SdfCheckboxGroup label="Schemas" className="grid grid-row-5 gap-x-6 gap-y-3 text-sm m-2">
+                    <div>
+                      {schemaOptions.slice(0, 6).map(schema => (
+                        <SdfCheckbox 
+                          key={schema}
+                          label={schema}
+                          value={schema.toLowerCase()}
+                          className="text-gray-700 gap-2 m-2"
+                          checked={filterState.schemas[schema] || false}
+                          onChange={(e) => handleSchemaChange(schema, e.target.checked)}
+                        />
+                      ))}
+                    </div>
+                    <div>
+                      {schemaOptions.slice(6, 12).map(schema => (
+                        <SdfCheckbox 
+                          key={schema}
+                          label={schema}
+                          value={schema.toLowerCase()}
+                          className="text-gray-700 gap-2 m-2"
+                          checked={filterState.schemas[schema] || false}
+                          onChange={(e) => handleSchemaChange(schema, e.target.checked)}
+                        />
+                      ))}
+                    </div>
+                    <div>
+                      {schemaOptions.slice(12).map(schema => (
+                        <SdfCheckbox 
+                          key={schema}
+                          label={schema}
+                          value={schema.toLowerCase()}
+                          className="text-gray-700 gap-2 m-2"
+                          checked={filterState.schemas[schema] || false}
+                          onChange={(e) => handleSchemaChange(schema, e.target.checked)}
+                        />
+                      ))}
+                    </div>
+                  </SdfCheckboxGroup>
+                  <div className="flex justify-start gap-6 mt-6 ml-4">
+                    <SdfButton emphasis="primary" className="" onClick={handleSelectAllSchemas}>All</SdfButton>
+                    <SdfButton emphasis="primary" className="" onClick={handleSelectNoneSchemas}>None</SdfButton>
+                  </div>
+                </div>
+              </SdfCard>
+              
+              <div className="flex">
+                <div className="flex-1 ml-4">
+                  <SdfCard className="p-2">
+                    <SdfInput
+                      label="Procedure"
+                      placeholder="Please enter Procedure name to fetch tickets"
+                      className="mb-3 text-sm"
+                      value={filterState.procedure}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+                        setFilterState({...filterState, procedure: e.target.value})
+                      }
+                    />
+                    <SdfButton
+                      icon="action-close"
+                      icon-placement="before"
+                      layout="stack"
+                      size="sm"
+                      variant="contained"
+                      className="py-2 text-sm w-28"
+                      onClick={() => setFilterState({...filterState, procedure: ''})}
+                    >
+                      Clear
+                    </SdfButton>
+                  </SdfCard>
+                </div>
+                
+                <div className="flex-1">
+                  <SdfCard className="p-2 w-70">
+                    <SdfInput
+                      input-type="decimal"
+                      label="User ID"
+                      placeholder="Please enter UserId to fetch tickets for a User"
+                      className="mb-3 text-sm"
+                      value={filterState.userId}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+                        setFilterState({...filterState, userId: e.target.value})
+                      }
+                    />
+                    <SdfButton
+                      icon="action-close"
+                      icon-placement="before"
+                      layout="stack"
+                      size="sm"
+                      variant="contained"
+                      className="py-2 text-sm w-20"
+                      onClick={() => setFilterState({...filterState, userId: ''})}
+                    >
+                      Clear
+                    </SdfButton>
+                  </SdfCard>
+                </div>
+              </div>
+              
+              <div className="mt-6 flex">
+                <SdfCheckbox 
+                  checked={filterState.fetchPreviousOnly}
+                  onChange={(e) => setFilterState({...filterState, fetchPreviousOnly: e.target.checked})}
+                />
+                <span className="font-bold">Fetch Current Asmp; previous days tickets only</span>
+              </div>
+              
+              <div className="flex items-center justify-center gap-6 mt-6 ml-4">
+                <SdfButton emphasis="primary" className="" onClick={handleApply}>Apply</SdfButton>
+                <SdfButton emphasis="primary" className="" onClick={handleCancel}>Cancel</SdfButton>
+                <SdfButton emphasis="primary" className="" onClick={handleReset}>Reset</SdfButton>
+              </div>
+            </SdfCard>
+          </SdfExpandableBox>
+          
+          <div className="flex mt-6 gap-20">
+            <SdfButton>Filter</SdfButton>
+            <span className="mt-4 font-black">AUTO SUBMIT OK</span>
+            <div className="flex mt-4 gap-4 ml-4">
+              <div className="">
+                <span className="bg-red-500 p-1">I</span> <span>Incomplete(0)</span>
+              </div>
+              <div className="">
+                <span className="bg-red-500 p-1">M</span> <span>Waiting(48)</span>
+              </div>
+              <div className="">
+                <span className="bg-red-500 p-1">Q</span> <span>Queued(0)</span>
+              </div>
+              <div className="">
+                <span className="bg-red-500 p-1">$</span> <span>Submitted(1)</span>
+              </div>
+              <div className="">
+                <span className="bg-red-500 p-1">A</span> <span>Active(1012)</span>
+              </div>
+              <div className="">
+                <span className="bg-red-500 p-1">P</span> <span>Problem(1)</span>
+              </div>
+            </div>
+          </div>
+          
+          <SdfExpandableBox>
+            <table className="sdf-table borders-all alt-rows" id="table-demo">
+              <thead>
+                <tr>
+                  <th className="text-heading-03 header-align-left">
+                    <span className="header-content">Scheme</span>
+                  </th>
+                  <th className="text-heading-03 header-align-left">
+                    <span className="header-content">Phone Number</span>
+                  </th>
+                  <th className="text-heading-03 header-align-left">
+                    <span className="header-content">Priority</span>
+                  </th>
+                  <th className="text-heading-03">Procedures</th>
+                  <th className="text-heading-03">User ID</th>
+                  <th className="text-heading-03">Class</th>
+                  <th className="text-heading-03">Status</th>
+                  <th className="text-heading-03">Route Print</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tickets.map(ticket => (
+                  <tr key={ticket.id}>
+                    <td>{ticket.schema}</td>
+                    <td>{ticket.phoneNumber}</td>
+                    <td>{ticket.priority || ''}</td>
+                    <td>{ticket.procedures}</td>
+                    <td>{ticket.userId}</td>
+                    <td>{ticket.class}</td>
+                    <td>{ticket.status}</td>
+                    <td>{ticket.routePrint}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </SdfExpandableBox>
+          
+          <div className="flex gap-4 mt-6">
+            <SdfButton onClick={handleRefresh} disabled={isLoading}>
+              {isLoading ? 'Loading...' : 'Refresh'}
+            </SdfButton>
+            <SdfButton 
+              onClick={handleSetRefresh} 
+              emphasis={autoRefresh ? 'primary' : 'default'}
+            >
+              {autoRefresh ? 'Stop Auto Refresh' : 'Set Auto Refresh'}
+            </SdfButton>
+            <SdfButton onClick={handleResubmit} disabled={selectedTickets.length === 0}>
+              Resubmit
+            </SdfButton>
+            <SdfButton onClick={handleMark} disabled={selectedTickets.length === 0}>
+              Mark
+            </SdfButton>
+            <SdfButton onClick={handleDelete} disabled={selectedTickets.length === 0}>
+              Delete
+            </SdfButton>
+            <SdfButton onClick={handleCancelCompany} disabled={selectedTickets.length === 0}>
+              Cancel Company
+            </SdfButton>
+            <SdfButton onClick={handleCancelJob} disabled={selectedTickets.length === 0}>
+              Cancel Job
+            </SdfButton>
+            <SdfButton onClick={handleSubmit}>
+              Submit
+            </SdfButton>
+          </div>
+        </SdfBox>
+      </SdfCard>
+    </div>
+  );
+}
+
+export default Main;
