@@ -1,0 +1,355 @@
+import React, { useState } from 'react';
+import { SdfBox, SdfButton, SdfCard, SdfCheckbox } from '@waypoint/react-components';
+
+interface FileData {
+  id: string;
+  selected: boolean;
+  name: string;
+  lineCount: number;
+  description: string;
+  taskNumber: string;
+  createTime: string;
+  updateTime: string;
+  status: string;
+  sharedFiles: string;
+  userId: string;
+}
+
+function Main() {
+  const [files, setFiles] = useState<FileData[]>([
+    {
+      id: '1',
+      selected: false,
+      name: '202507241518',
+      lineCount: 1,
+      description: 'undefined',
+      taskNumber: '00-001',
+      createTime: '2025-08-26 05:56:23:130',
+      updateTime: '2025-07-24 05:47:27:377',
+      status: 'Active',
+      sharedFiles: '',
+      userId: 'GJAMA00'
+    },
+    {
+      id: '2',
+      selected: false,
+      name: '202507241518',
+      lineCount: 1,
+      description: 'undefined',
+      taskNumber: '08-001',
+      createTime: '2025-08-26 05:56:23:130',
+      updateTime: '2025-07-24 05:47:27:577',
+      status: 'Active',
+      sharedFiles: '',
+      userId: 'GIAMA0R'
+    }
+  ]);
+
+  const [selectedGroup, setSelectedGroup] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Delete selected files
+  const handleDeleteSelected = () => {
+    const selectedFiles = files.filter(file => file.selected);
+    if (selectedFiles.length === 0) {
+      alert('Please select at least one file to delete');
+      return;
+    }
+    
+    if (confirm(`Are you sure you want to delete ${selectedFiles.length} file(s)?`)) {
+      // Filter out selected files
+      const updatedFiles = files.filter(file => !file.selected);
+      setFiles(updatedFiles);
+      
+      // Show success message
+      alert(`Successfully deleted ${selectedFiles.length} file(s)`);
+    }
+  };
+
+  // Merge selected files
+  const handleMerge = () => {
+    const selectedFiles = files.filter(file => file.selected);
+    
+    if (selectedFiles.length < 2) {
+      alert('Please select at least 2 files to merge');
+      return;
+    }
+    
+    // Create merged file
+    const mergedFile: FileData = {
+      id: Date.now().toString(),
+      selected: false,
+      name: `merged_${Date.now()}`,
+      lineCount: selectedFiles.reduce((sum, file) => sum + file.lineCount, 0),
+      description: 'Merged file',
+      taskNumber: 'MERGED',
+      createTime: new Date().toISOString().replace('T', ' ').slice(0, 23),
+      updateTime: new Date().toISOString().replace('T', ' ').slice(0, 23),
+      status: 'Active',
+      sharedFiles: '',
+      userId: 'SYSTEM'
+    };
+    
+    // Remove selected files and add merged file
+    const updatedFiles = [
+      ...files.filter(file => !file.selected),
+      mergedFile
+    ];
+    
+    setFiles(updatedFiles);
+    alert(`Successfully merged ${selectedFiles.length} files into ${mergedFile.name}`);
+  };
+
+  // Assign selected files to a shared group
+  const handleAssignSharedGroup = () => {
+    const selectedFiles = files.filter(file => file.selected);
+    
+    if (selectedFiles.length === 0) {
+      alert('Please select at least one file to assign to a shared group');
+      return;
+    }
+    
+    const groupName = prompt('Enter the name of the shared group:');
+    
+    if (groupName) {
+      // Update files with the shared group
+      const updatedFiles = files.map(file => 
+        file.selected ? { ...file, sharedFiles: groupName } : file
+      );
+      
+      setFiles(updatedFiles);
+      setSelectedGroup(groupName);
+      alert(`Assigned ${selectedFiles.length} file(s) to shared group: ${groupName}`);
+    }
+  };
+
+  // Search for user's files
+  const handleSearchUserFiles = () => {
+    const userId = prompt('Enter User ID to search for files:');
+    
+    if (userId) {
+      setSearchQuery(userId);
+      const userFiles = files.filter(file => 
+        file.userId.toLowerCase().includes(userId.toLowerCase())
+      );
+      
+      if (userFiles.length === 0) {
+        alert(`No files found for user: ${userId}`);
+      } else {
+        alert(`Found ${userFiles.length} file(s) for user: ${userId}`);
+        // In a real app, you would filter the table view here
+      }
+    }
+  };
+
+  // Reset view to default
+  const handleResetView = () => {
+    setSearchQuery('');
+    setSelectedGroup('');
+    
+    // Deselect all files
+    const updatedFiles = files.map(file => ({ ...file, selected: false }));
+    setFiles(updatedFiles);
+    
+    alert('View has been reset to default');
+  };
+
+  // Toggle selection for a single file
+  const handleRowSelection = (id: string) => {
+    setFiles(files.map(file => 
+      file.id === id ? { ...file, selected: !file.selected } : file
+    ));
+  };
+
+  // Select or deselect all files
+  const handleSelectAll = (checked: boolean) => {
+    setFiles(files.map(file => ({ ...file, selected: checked })));
+  };
+
+  // Delete a single file
+  const handleDeleteSingle = (id: string) => {
+    const fileToDelete = files.find(file => file.id === id);
+    
+    if (fileToDelete && confirm(`Are you sure you want to delete file: ${fileToDelete.name}?`)) {
+      const updatedFiles = files.filter(file => file.id !== id);
+      setFiles(updatedFiles);
+      alert(`File ${fileToDelete.name} has been deleted`);
+    }
+  };
+
+  // View task details
+  const handleTaskView = (id: string) => {
+    const file = files.find(file => file.id === id);
+    
+    if (file) {
+      alert(`Task Details:\nName: ${file.name}\nTask Number: ${file.taskNumber}\nStatus: ${file.status}\nUser: ${file.userId}`);
+    }
+  };
+
+  // Edit file details
+  const handleEdit = (id: string) => {
+    const file = files.find(file => file.id === id);
+    
+    if (file) {
+      const newName = prompt('Enter new file name:', file.name);
+      const newDescription = prompt('Enter new description:', file.description);
+      
+      if (newName !== null && newDescription !== null) {
+        const updatedFiles = files.map(f => 
+          f.id === id ? { 
+            ...f, 
+            name: newName, 
+            description: newDescription,
+            updateTime: new Date().toISOString().replace('T', ' ').slice(0, 23)
+          } : f
+        );
+        
+        setFiles(updatedFiles);
+        alert('File details updated successfully');
+      }
+    }
+  };
+
+  return (
+    <div>
+      <SdfBox className="flex items-center justify-between bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 p-4 rounded-lg shadow-md text-white">
+        <div className="flex items-center space-x-2">
+          <SdfButton 
+            className="px-3 py-1 text-sm" 
+            emphasis="primary" 
+            icon="action-delete"
+            onClick={handleDeleteSelected}
+          >
+            Delete Selected
+          </SdfButton>
+          <SdfButton 
+            className="px-3 py-1 text-sm" 
+            emphasis="primary" 
+            icon="ext-md1-cell-merge"
+            onClick={handleMerge}
+          >
+            Merge
+          </SdfButton>
+        </div>
+        <div className="flex items-center space-x-2 ml-auto">
+          <SdfButton 
+            className="px-3 py-1 text-sm" 
+            emphasis="primary" 
+            icon="action-share"
+            onClick={handleAssignSharedGroup}
+          >
+            Assigned Shared Group(S)
+          </SdfButton>
+          <SdfButton 
+            className="px-3 py-1 text-sm" 
+            emphasis="primary" 
+            icon="pto-personal"
+            onClick={handleSearchUserFiles}
+          >
+            Search for User's Files
+          </SdfButton>
+          <SdfButton 
+            className="px-3 py-1 text-sm" 
+            emphasis="primary" 
+            icon="action-close"
+            onClick={handleResetView}
+          >
+            Reset View
+          </SdfButton>
+        </div>
+      </SdfBox>
+      
+      <SdfCard>
+        <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-700">
+          <h2 className="text-[20px] font-bold m-0">Output Files</h2>
+          <SdfButton icon="action-help">Help</SdfButton>
+        </div>
+        
+        <div data-testid="rs-people-detail-tile" className="p-4">
+          <table className="table-auto border-collapse border border-gray-400 w-full text-xs">
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="border border-gray-400 px-1 py-1 text-left">
+                  <SdfCheckbox
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    checked={files.length > 0 && files.every(file => file.selected)}
+                  />
+                </th>
+                <th className="border border-gray-400 px-1 py-1 text-left">Delete</th>
+                <th className="border border-gray-400 px-1 py-1 text-left">Task View</th>
+                <th className="border border-gray-400 px-1 py-1 text-left">Editor View</th>
+                <th className="border border-gray-400 px-1 py-1 text-left">Name</th>
+                <th className="border border-gray-400 px-1 py-1 text-left">Line Count</th>
+                <th className="border border-gray-400 px-1 py-1 text-left">Description</th>
+                <th className="border border-gray-400 px-1 py-1 text-left">Task Number</th>
+                <th className="border border-gray-400 px-1 py-1 text-left">Create Time</th>
+                <th className="border border-gray-400 px-1 py-1 text-left">Update Time</th>
+                <th className="border border-gray-400 px-1 py-1 text-left">Status</th>
+                <th className="border border-gray-400 px-1 py-1 text-left">Shared File(s)</th>
+                <th className="border border-gray-400 px-1 py-1 text-left">User ID</th>
+              </tr>
+            </thead>
+            <tbody>
+              {files.map((file) => (
+                <tr key={file.id} tabIndex={0} role="button" className="cursor-pointer">
+                  <td className="border border-gray-400 px-1 py-1 text-left">
+                    <span className="align-middle">
+                      <SdfCheckbox
+                        checked={file.selected}
+                        onChange={() => handleRowSelection(file.id)}
+                      />
+                    </span>
+                  </td>
+                  <td className="border border-gray-400 px-1 py-1 text-left">
+                    <SdfButton 
+                      icon="action-delete" 
+                      size="sm" 
+                      variant="contained"
+                      onClick={() => handleDeleteSingle(file.id)}
+                    />
+                  </td>
+                  <td className="border border-gray-400 px-1 py-1 text-left">
+                    <SdfButton 
+                      icon="ext-mdi-assignment" 
+                      size="sm" 
+                      variant="contained"
+                      onClick={() => handleTaskView(file.id)}
+                    />
+                  </td>
+                  <td className="border border-gray-400 px-1 py-1 text-left">
+                    <SdfButton 
+                      icon="action-edit" 
+                      size="sm" 
+                      variant="contained"
+                      onClick={() => handleEdit(file.id)}
+                    />
+                  </td>
+                  <td className="border border-gray-400 px-1 py-1 text-left">{file.name}</td>
+                  <td className="border border-gray-400 px-1 py-1 text-left">{file.lineCount}</td>
+                  <td className="border border-gray-400 px-1 py-1 text-left">{file.description}</td>
+                  <td className="border border-gray-400 px-1 py-1 text-left">{file.taskNumber}</td>
+                  <td className="border border-gray-400 px-1 py-1 text-left">{file.createTime}</td>
+                  <td className="border border-gray-400 px-1 py-1 text-left">{file.updateTime}</td>
+                  <td className="border border-gray-400 px-1 py-1 text-left">{file.status}</td>
+                  <td className="border border-gray-400 px-1 py-1 text-left">{file.sharedFiles}</td>
+                  <td className="border border-gray-400 px-1 py-1 text-left">{file.userId}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </SdfCard>
+      
+      <SdfBox className="flex items-center justify-between bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 p-4 rounded-xl shadow-lg text-white mt-4">
+        <div>
+          Total files: {files.length}
+        </div>
+        <div className="text-sm ml-4">
+          Output files are purged after 30 days. (Note: Maximum file size for each Output file is 500MB)
+        </div>
+      </SdfBox>
+    </div>
+  );
+}
+
+export default Main;
