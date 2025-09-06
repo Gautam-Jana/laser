@@ -1,0 +1,66 @@
+import React, { useState } from 'react';
+import { SdfBox, SdfButton, SdfCard } from '@waypoint/react-components';
+
+function Main() {
+  const [lastUpdated, setLastUpdated] = useState('January 2014');
+  const [showUpdateHistory, setShowUpdateHistory] = useState(false);
+
+  const handleUpdateClick = () => {
+    // Show a modal with update history
+    setShowUpdateHistory(true);
+    
+    // In a real application, you might fetch update history from an API
+    const updateHistory = [
+      { date: 'January 2014', changes: 'Initial PWF system implementation' },
+      { date: 'June 2015', changes: 'Added support for batch processing' },
+      { date: 'March 2017', changes: 'Enhanced security features' },
+      { date: 'November 2019', changes: 'UI modernization and performance improvements' }
+    ];
+    
+    // Display the update history to the user
+    let message = 'PWF Update History:\n\n';
+    updateHistory.forEach(update => {
+      message += `${update.date}: ${update.changes}\n\n`;
+    });
+    
+    alert(message);
+  };
+
+  const handlePwfContentCentralClick = () => {
+    // Open PWF ContentCentral in a new tab
+    const contentCentralUrl = 'https://contentcentral.pwf.example.com';
+    window.open(contentCentralUrl, '_blank');
+    
+    // Track this action (in a real application)
+    console.log('User accessed PWF ContentCentral');
+    
+    // Show a confirmation message
+    alert('Opening PWF ContentCentral in a new tab...');
+  };
+
+  return (
+    <div>
+      <SdfBox className="flex m-2 items-center justify-between bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 p-4 rounded-xl shadow-lg text-white">
+        About PWF <SdfButton onClick={handleUpdateClick}>Updated {lastUpdated}</SdfButton>
+      </SdfBox>
+      
+      <SdfCard className="relative bg-white/10 backdrop-blur-xl shadow-2xl rounded-3xl p-6 border border-white/20 overflow-hidden">
+        <div>
+          PWF, or the Production Management Facility, is an ADP application used to initiate and submit many of the common mainframe jobs and procedures that, for instance, enable payrolls to be processed, adjustments to client information to be made, and reports to be generated. Using a series of task menus and screens, users are able to initiate those jobs and procedures.
+          Each PWF task available is associated with a specific mainframe job.
+          
+          <SdfButton
+            emphasis="primary"
+            icon="action-help"
+            className="w-60 m-4 bg-gradient-to-r from-fuchsia-600 to-indigo-600 text-white font-bold px-2 py-2 rounded-xl hover:shadow-2xl hover:from-fuchsia-500 hover:to-indigo-500"
+            onClick={handlePwfContentCentralClick}
+          >
+            PWF ContentCentral
+          </SdfButton>
+        </div>
+      </SdfCard>
+    </div>
+  );
+}
+
+export default Main;
