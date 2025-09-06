@@ -1,0 +1,11 @@
+const handleProcedureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFilterState({...filterState, procedure: value});
+    setErrors({...errors, procedure: validateProcedure(value)});
+  };
+
+  const handleUserIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFilterState({...filterState, userId: value});
+    setErrors({...errors, userId: validateUserId(value)});
+  };
