@@ -1,0 +1,35 @@
+import React from 'react';
+import { SdfBox, SdfCard, SdfLink } from '@waypoint/react-components';
+
+function Main() {
+  return (
+    <div>
+      <SdfBox className="font-black text-2x1 border border-solid border-black border-8">
+        Task Categories // CSS-ESS
+      </SdfBox>
+      <div className="mt-40 ml-20 mr-20 ">
+        <SdfBox className="border border-gray-300 rounded-t-md mb-0"></SdfBox>
+        <SdfCard className="border border-gray-300 rounded-b-md -mt-px">
+          <div className="flex gap-40">
+            <SdfLink>02-002 - Print CSS Daily Reports</SdfLink>
+            <SdfLink className="ml-2">02-025 - Mass Change Trip ID</SdfLink>
+            <SdfLink className="ml-6">02-026 - Mass Change CSR Code</SdfLink>
+          </div>
+          <div className="flex gap-40 mt-8">
+            <SdfLink>02-030 - Print CSS Requests</SdfLink>
+            <SdfLink className="ml-10">02-032 - Print Nailing Labels</SdfLink>
+            <SdfLink className="ml-10">02-033 - Print Address Listing</SdfLink>
+          </div>
+          <div className="flex gap-40 mt-8">
+            <SdfLink>02-101 - Print P/R Schd-Cmpd Co</SdfLink>
+            <SdfLink className="mr-4">02-110 - Print P/R Schd-Selective</SdfLink>
+            <SdfLink>02-111 - Print P/R Schd-All Cos</SdfLink>
+          </div>
+        </SdfCard>
+        <SdfBox className="border border-gray-300 rounded-t-md mb-0 "></SdfBox>
+      </div>
+    </div>
+  );
+}
+
+export default Main;
