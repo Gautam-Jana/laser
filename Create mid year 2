@@ -1,0 +1,129 @@
+import React, { useState } from 'react';
+import { SaffBox, SaffButton, SaffCard, SaffLink, SaffSelectItem, SaffSelectSimple } from '@waypoint/react-components';
+
+function Main() {
+  const [runMode, setRunMode] = useState<string>('N - No Update');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  // Handler for Help button
+  const handleHelp = () => {
+    console.log('Help button clicked');
+    // Logic to show help information
+    alert('Showing help information for PA Conversion List Reports');
+  };
+
+  // Handler for Next button
+  const handleNext = () => {
+    console.log('Next button clicked with run mode:', runMode);
+    setIsLoading(true);
+    
+    // Simulate an API call or navigation
+    setTimeout(() => {
+      setIsLoading(false);
+      alert(`Proceeding with run mode: ${runMode}`);
+    }, 1000);
+  };
+
+  // Handler for Cancel button
+  const handleCancel = () => {
+    console.log('Cancel button clicked');
+    // Logic to cancel the current operation
+    if (window.confirm('Are you sure you want to cancel?')) {
+      alert('Operation cancelled');
+      setRunMode('N - No Update'); // Reset to default
+    }
+  };
+
+  // Handler for Clear button
+  const handleClear = () => {
+    console.log('Clear button clicked');
+    // Logic to clear form or selections
+    setRunMode('N - No Update');
+    alert('Selections cleared');
+  };
+
+  // Handler for Copy Link button
+  const handleCopyLink = () => {
+    console.log('Copy Link button clicked');
+    // Logic to copy link references to clipboard
+    navigator.clipboard.writeText('PCIPALST Reference Link')
+      .then(() => alert('Link copied to clipboard!'))
+      .catch(err => console.error('Failed to copy link: ', err));
+  };
+
+  // Handler for run mode selection change
+  const handleRunModeChange = (value: string) => {
+    console.log('Run mode changed to:', value);
+    setRunMode(value);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100 p-4">
+      <SaffBox className="p-4">
+        <div className="">
+          <span className="font-black">Task Categories // Conversions // Cnvt PA List Rpts - All - 26-170 // Procedure: PCIPALST</span>
+          <SaffLink className="mt-4 cursor-pointer" onClick={handleCopyLink}>
+            Click Here to Copy Link References
+          </SaffLink>
+        </div>
+        <div className="flex items-end justify-end">
+          <SaffButton icon="action-help" onClick={handleHelp}>
+            Help
+          </SaffButton>
+        </div>
+      </SaffBox>
+      
+      <div className="m-10">
+        <SaffBox className="p-4 mb-4">
+          <span className="font-black flex items-center justify-center text-xl">
+            26-170 - PA Conversion List Reports - ALL
+          </span>
+        </SaffBox>
+        
+        <SaffCard className="p-6 mb-4">
+          <div className="flex items-center justify-center">
+            <span className="font-black mr-4">Run Mode</span>
+            <SaffSelectSimple 
+              value={runMode} 
+              onChange={handleRunModeChange}
+              className="ml-4 w-48"
+            >
+              <SaffSelectItem value="N - No Update">N - No Update</SaffSelectItem>
+              <SaffSelectItem value="Y - Update">Y - Update</SaffSelectItem>
+            </SaffSelectSimple>
+          </div>
+        </SaffCard>
+        
+        <SaffBox className="p-4">
+          <div className="flex items-center justify-center gap-4">
+            <SaffButton 
+              active 
+              icon="nav-page-next" 
+              onClick={handleNext}
+              disabled={isLoading}
+              className="min-w-24"
+            >
+              {isLoading ? 'Processing...' : 'Next'}
+            </SaffButton>
+            <SaffButton 
+              icon="action-refresh" 
+              onClick={handleCancel}
+              className="min-w-24"
+            >
+              Cancel
+            </SaffButton>
+            <SaffButton 
+              icon="action-close" 
+              onClick={handleClear}
+              className="min-w-24"
+            >
+              Clear
+            </SaffButton>
+          </div>
+        </SaffBox>
+      </div>
+    </div>
+  );
+}
+
+export default Main;
