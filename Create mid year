@@ -1,0 +1,41 @@
+import React from 'react';
+import { SaffBox, SaffButton, SaffCard, SaffLink, SaffSelectItem, SaffSelectSimple } from '@waypoint/react-components';
+
+function Main() {
+  return (
+    <div>
+      <SaffBox>
+        <div className="">
+          <span className="font-black">Task Categories // Conversions // Cnvt PA List Rpts - All - 26-170 // Procedure: PCIPALST</span>
+          <SaffLink className="mt-4">Click Here to Copy Link References</SaffLink>
+        </div>
+        <div className="flex items-end justify-end">
+          <SaffButton icon="action-help">Help</SaffButton>
+        </div>
+      </SaffBox>
+      <div className="m-40">
+        <SaffBox>
+          <span className="font-black flex items-center justify-center">26-170 - PA Conversion List Reports - ALL</span>
+        </SaffBox>
+        <SaffCard>
+          <div className="flex items-center justify-center">
+            <span className="font-black">Run Mode</span>
+            <SaffSelectSimple className="ml-4">
+              <SaffSelectItem>N - No Update</SaffSelectItem>
+              <SaffSelectItem>Y - Update</SaffSelectItem>
+            </SaffSelectSimple>
+          </div>
+        </SaffCard>
+        <SaffBox>
+          <div className="flex items-center justify-center gap-2">
+            <SaffButton active icon="nav-page-next">Next</SaffButton>
+            <SaffButton icon="action-refresh">Cancel</SaffButton>
+            <SaffButton icon="action-close">Clear</SaffButton>
+          </div>
+        </SaffBox>
+      </div>
+    </div>
+  );
+}
+
+export default Main;
