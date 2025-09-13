@@ -1,0 +1,377 @@
+import React, { useState } from 'react';
+
+// Form data interface
+interface FormData {
+  region: string;
+  companyCode: string;
+  procedure: string;
+  description: string;
+  priority: string;
+  company: string;
+  dueOutBy: string;
+  datasetOrigin: string;
+  controlCard: string;
+  dataFile: string;
+  specialInstructions: string;
+  printOption: string;
+  allowMixedCase: boolean;
+  computerRoom: boolean;
+  user: boolean;
+  network: boolean;
+}
+
+// Error interface
+interface FormErrors {
+  region?: string;
+  companyCode?: string;
+  procedure?: string;
+  description?: string;
+  priority?: string;
+  company?: string;
+  dueOutBy?: string;
+  datasetOrigin?: string;
+  controlCard?: string;
+  dataFile?: string;
+  specialInstructions?: string;
+  printOption?: string;
+}
+
+const Main: React.FC = () => {
+  // Initial form state
+  const initialFormData: FormData = {
+    region: '',
+    companyCode: '',
+    procedure: '',
+    description: '',
+    priority: '',
+    company: '',
+    dueOutBy: '',
+    datasetOrigin: '',
+    controlCard: '',
+    dataFile: '',
+    specialInstructions: '',
+    printOption: '',
+    allowMixedCase: false,
+    computerRoom: false,
+    user: false,
+    network: false
+  };
+
+  const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [errors, setErrors] = useState<FormErrors>({});
+
+  // Handle input changes
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+    
+    setFormData({
+      ...formData,
+      [name]: type === 'checkbox' ? checked : value
+    });
+  };
+
+  // Validation function
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    // Required field validations
+    if (!formData.region) newErrors.region = 'Region is required';
+    if (!formData.companyCode) newErrors.companyCode = 'Company Code is required';
+    if (!formData.procedure) newErrors.procedure = 'Procedure is required';
+    if (!formData.description) newErrors.description = 'Description is required';
+    if (!formData.priority) newErrors.priority = 'Priority is required';
+    if (!formData.company) newErrors.company = 'Company is required';
+    if (!formData.dueOutBy) newErrors.dueOutBy = 'Due Out By is required';
+    if (!formData.datasetOrigin) newErrors.datasetOrigin = 'Dataset Origin is required';
+    if (!formData.controlCard) newErrors.controlCard = 'Control Card is required';
+    if (!formData.dataFile) newErrors.dataFile = 'Data File is required';
+
+    // Format validation for Due Out By (HHMM format)
+    const dueOutByRegex = /^([0-1][0-9]|2[0-3])([0-5][0-9])$/;
+    if (formData.dueOutBy && !dueOutByRegex.test(formData.dueOutBy)) {
+      newErrors.dueOutBy = 'Due Out By must be in HHMM format';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Handle form submission
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validateForm()) {
+      // Form is valid, proceed with submission
+      console.log('Form submitted:', formData);
+      alert('Form submitted successfully!');
+    } else {
+      console.log('Form has errors:', errors);
+    }
+  };
+
+  // Handle form clear
+  const handleClear = () => {
+    setFormData(initialFormData);
+    setErrors({});
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 to-purple-900 text-white">
+      {/* App Bar */}
+      <div className="w-full px-2 py-3 bg-black/30 backdrop-blur-md">
+        <h1 className="text-xl font-bold text-center">Laser Storage Facility</h1>
+      </div>
+
+      <div className="w-full px-2 max-w-screen-md mx-auto py-6">
+        {/* Region and Company Code Selects */}
+        <div className="flex flex-wrap justify-start gap-2 my-4">
+          <div className="w-full md:w-64">
+            <select
+              name="region"
+              value={formData.region}
+              onChange={handleInputChange}
+              className={`w-full rounded-lg border ${errors.region ? 'border-red-500' : 'border-gray-300'} shadow-sm bg-white/10 backdrop-blur-md text-white p-2`}
+            >
+              <option value="">Select Region</option>
+              <option value="north">North Region</option>
+              <option value="south">South Region</option>
+              <option value="east">East Region</option>
+              <option value="west">West Region</option>
+            </select>
+            {errors.region && <p className="text-red-400 text-xs mt-1">{errors.region}</p>}
+          </div>
+          
+          <div className="w-full md:w-64">
+            <select
+              name="companyCode"
+              value={formData.companyCode}
+              onChange={handleInputChange}
+              className={`w-full rounded-lg border ${errors.companyCode ? 'border-red-500' : 'border-gray-300'} shadow-sm bg-white/10 backdrop-blur-md text-white p-2`}
+            >
+              <option value="">Select Company Code</option>
+              <option value="comp1">Company 1</option>
+              <option value="comp2">Company 2</option>
+              <option value="comp3">Company 3</option>
+            </select>
+            {errors.companyCode && <p className="text-red-400 text-xs mt-1">{errors.companyCode}</p>}
+          </div>
+        </div>
+
+        {/* Form Card */}
+        <div className="relative bg-white/10 backdrop-blur-xl shadow-xl rounded-2xl p-6 border border-white/20 overflow-hidden w-full">
+          <div className="w-full flex flex-col items-center">
+            {/* Procedure, Description, Priority */}
+            <div className="flex flex-col items-center w-full max-w-xs">
+              <div className="flex items-center mb-4 w-full">
+                <span className="text-white font-black w-28 text-sm">Procedure</span>
+                <input
+                  name="procedure"
+                  value={formData.procedure}
+                  onChange={handleInputChange}
+                  className={`w-full border-l-4 ${errors.procedure ? 'border-red-500' : 'border-purple-500'} text-white font-bold tracking-wide h-8 px-2 bg-white/10 rounded`}
+                />
+              </div>
+              {errors.procedure && <p className="text-red-400 text-xs -mt-3 mb-3 self-start ml-28">{errors.procedure}</p>}
+              
+              <div className="flex items-center mb-4 w-full">
+                <span className="text-white font-black w-28 text-sm">Description</span>
+                <input
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  className={`w-full border-l-4 ${errors.description ? 'border-red-500' : 'border-purple-500'} text-white font-bold tracking-wide h-8 px-2 bg-white/10 rounded`}
+                />
+              </div>
+              {errors.description && <p className="text-red-400 text-xs -mt-3 mb-3 self-start ml-28">{errors.description}</p>}
+              
+              <div className="flex items-center mb-4 w-full">
+                <span className="text-white font-black w-28 text-sm">Priority</span>
+                <input
+                  name="priority"
+                  value={formData.priority}
+                  onChange={handleInputChange}
+                  className={`w-full border-l-4 ${errors.priority ? 'border-red-500' : 'border-purple-500'} text-white font-bold tracking-wide h-8 px-2 bg-white/10 rounded`}
+                />
+              </div>
+              {errors.priority && <p className="text-red-400 text-xs -mt-3 mb-3 self-start ml-28">{errors.priority}</p>}
+            </div>
+
+            {/* Company, Due Out By, Dataset Origin */}
+            <div className="flex flex-col items-center mt-4 w-full max-w-xs">
+              <div className="flex items-center mb-4 w-full">
+                <span className="text-white font-black w-28 text-sm">Company</span>
+                <input
+                  name="company"
+                  value={formData.company}
+                  onChange={handleInputChange}
+                  className={`w-full border-l-4 ${errors.company ? 'border-red-500' : 'border-purple-500'} text-white font-bold tracking-wide h-8 px-2 bg-white/10 rounded`}
+                />
+              </div>
+              {errors.company && <p className="text-red-400 text-xs -mt-3 mb-3 self-start ml-28">{errors.company}</p>}
+              
+              <div className="flex items-center mb-4 w-full">
+                <span className="text-white font-black w-28 text-sm">Due Out By</span>
+                <input
+                  name="dueOutBy"
+                  value={formData.dueOutBy}
+                  onChange={handleInputChange}
+                  placeholder="HHMM"
+                  className={`w-full border-l-4 ${errors.dueOutBy ? 'border-red-500' : 'border-purple-500'} text-white font-bold tracking-wide h-8 px-2 bg-white/10 rounded`}
+                />
+              </div>
+              {errors.dueOutBy && <p className="text-red-400 text-xs -mt-3 mb-3 self-start ml-28">{errors.dueOutBy}</p>}
+              
+              <div className="flex items-center mb-4 w-full">
+                <span className="text-white font-black w-28 text-sm mr-1">Dataset Origin</span>
+                <input
+                  name="datasetOrigin"
+                  value={formData.datasetOrigin}
+                  onChange={handleInputChange}
+                  className={`w-full border-l-4 ${errors.datasetOrigin ? 'border-red-500' : 'border-purple-500'} text-white font-bold tracking-wide h-8 px-2 bg-white/10 rounded`}
+                />
+              </div>
+              {errors.datasetOrigin && <p className="text-red-400 text-xs -mt-3 mb-3 self-start ml-28">{errors.datasetOrigin}</p>}
+            </div>
+
+            {/* File Uploads and Text Areas */}
+            <div className="flex flex-col items-center w-full max-w-xs mt-6">
+              <div className="w-full mb-4">
+                <div className="flex items-center w-full mb-2">
+                  <span className="text-white font-black text-sm mr-1 w-28">Control Card</span>
+                  <textarea
+                    name="controlCard"
+                    value={formData.controlCard}
+                    onChange={handleInputChange}
+                    rows={3}
+                    className="w-56 font-bold bg-white/10 rounded px-2 py-1 text-white"
+                  />
+                </div>
+                {errors.controlCard && <p className="text-red-400 text-xs mt-1 ml-28">{errors.controlCard}</p>}
+                <div className="ml-28 mt-2">
+                  <input type="file" className="text-xs text-white" />
+                </div>
+              </div>
+
+              <div className="w-full mb-4">
+                <div className="flex items-center w-full mb-2">
+                  <span className="text-white font-black text-sm w-28">Data File</span>
+                  <textarea
+                    name="dataFile"
+                    value={formData.dataFile}
+                    onChange={handleInputChange}
+                    rows={3}
+                    className="w-56 font-bold bg-white/10 rounded px-2 py-1 text-white ml-3"
+                  />
+                </div>
+                {errors.dataFile && <p className="text-red-400 text-xs mt-1 ml-28">{errors.dataFile}</p>}
+                <div className="ml-28 mt-2 flex items-center">
+                  <input type="file" className="text-xs text-white mr-2" />
+                  <label className="flex items-center text-xs">
+                    <input
+                      type="checkbox"
+                      name="allowMixedCase"
+                      checked={formData.allowMixedCase}
+                      onChange={handleInputChange}
+                      className="mr-1 accent-indigo-600"
+                    />
+                    Allow Mixed Case in Data File
+                  </label>
+                </div>
+              </div>
+
+              <div className="w-full mb-4">
+                <div className="flex items-center w-full">
+                  <span className="text-white font-black w-28 text-sm">Special Instructions</span>
+                  <textarea
+                    name="specialInstructions"
+                    value={formData.specialInstructions}
+                    onChange={handleInputChange}
+                    rows={2}
+                    className="w-56 bg-gradient-to-tr from-fuchsia-600 to-indigo-600 text-white font-bold px-2 py-1 rounded-xl"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Print Option and Checkboxes */}
+            <div className="flex flex-col items-center justify-start w-full gap-2 mt-6">
+              <div className="w-full max-w-xs">
+                <div className="flex items-center w-full mb-2">
+                  <span className="text-white font-black w-28 text-sm">Print Option</span>
+                  <textarea
+                    name="printOption"
+                    value={formData.printOption}
+                    onChange={handleInputChange}
+                    rows={1}
+                    className="w-56 bg-gradient-to-tr from-fuchsia-600 to-indigo-600 text-white font-bold px-2 py-1 rounded-xl"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-4 justify-center ml-20 mt-3">
+                  <label className="flex items-center text-xs">
+                    <input
+                      type="checkbox"
+                      name="computerRoom"
+                      checked={formData.computerRoom}
+                      onChange={handleInputChange}
+                      className="mr-1 accent-indigo-600"
+                    />
+                    Computer Room
+                  </label>
+                  <label className="flex items-center text-xs">
+                    <input
+                      type="checkbox"
+                      name="user"
+                      checked={formData.user}
+                      onChange={handleInputChange}
+                      className="mr-1 accent-indigo-600"
+                    />
+                    User
+                  </label>
+                  <label className="flex items-center text-xs">
+                    <input
+                      type="checkbox"
+                      name="network"
+                      checked={formData.network}
+                      onChange={handleInputChange}
+                      className="mr-1 accent-indigo-600"
+                    />
+                    Network
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex flex-col items-center gap-3 mt-8 w-full">
+              <div className="flex flex-wrap justify-center gap-3">
+                <button
+                  onClick={handleSubmit}
+                  className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-2 px-6 rounded-lg flex items-center"
+                >
+                  <span className="mr-2">Submit</span>
+                </button>
+                <button
+                  onClick={handleClear}
+                  className="bg-gradient-to-r from-gray-600 to-gray-700 text-white font-bold py-2 px-6 rounded-lg flex items-center"
+                >
+                  <span className="mr-2">Clear</span>
+                </button>
+                <button className="bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-2 px-6 rounded-lg flex items-center">
+                  <span className="mr-2">Help</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer Links */}
+        <div className="flex flex-wrap justify-end gap-3 mt-4 pr-2">
+          <a href="#" className="text-xs text-white hover:underline">PRIVACY</a>
+          <a href="#" className="text-xs text-white hover:underline">LEGAL</a>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Main;
